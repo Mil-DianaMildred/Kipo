@@ -21,7 +21,7 @@ Este repositorio contiene casos de estudio, análisis técnicos y documentación
 | Producto | Descripción técnica |
 |---|---|
 | Billetera digital | Cuenta de depósito de bajo valor regulada bajo esquema Sedpe. Saldo en tiempo real, movimientos y notificaciones push. |
-| Tarjeta débito Mastercard | Emisión de tarjeta virtual + física. Flujo: autorización → red Mastercard → emisor Kipo → débito en wallet. Soporta tokenización NFC (Apple Pay / Google Wallet). |
+| Tarjeta débito Mastercard · Visa | Emisión de tarjeta virtual + física. Flujo: autorización → red (Mastercard o Visa) → emisor Kipo → débito en wallet. Soporta tokenización NFC (Apple Pay / Google Wallet). |
 | Pagos QR | QR interoperable vía Transfiya. El comercio genera el QR; Kipo resuelve la instrucción de pago contra el saldo del usuario en <3s. |
 | Transferencias | Transferencias ACH en tiempo real y débitos PSE para pagos online. Sin costo para el usuario. |
 | Pago de facturas | Integración con operadores de servicios públicos, telefonía e internet vía convenios de recaudo (SPE). |
@@ -35,7 +35,7 @@ Este repositorio contiene casos de estudio, análisis técnicos y documentación
 | API / Módulo | Capacidad |
 |---|---|
 | Cuentas virtuales | Apertura programática de cuentas, KYC biométrico, gestión de saldo y movimientos. Multi-tenant: cada empresa cliente tiene su propio namespace. |
-| Emisión de tarjetas | Emisión white-label de tarjetas Mastercard débito (virtual y física). Control de límites, bloqueo/desbloqueo y configuración de controles por API. |
+| Emisión de tarjetas | Emisión white-label de tarjetas Mastercard y Visa débito (virtual y física). Control de límites, bloqueo/desbloqueo y configuración de controles por API. |
 | Motor de transferencias | ACH Colombia y Transfiya. La empresa cliente instruye el movimiento vía API; Kipo ejecuta, confirma y notifica vía webhook. |
 | Gateway QR | Generación y resolución de QR para comercios. Soporta cobros únicos y QR dinámico con monto embebido. |
 | Módulo antifraude | Reglas configurables + scoring ML. Señales: device ID, geolocalización, velocidad transaccional, listas negras UIAF. |
@@ -55,21 +55,21 @@ Este repositorio contiene casos de estudio, análisis técnicos y documentación
 | Clientes B2B (Platform) | 38 empresas |
 | Licencia regulatoria | Sedpe (Sociedad Especializada en Depósitos y Pagos Electrónicos) |
 | Reguladores | Superintendencia Financiera de Colombia (SFC) · UIAF |
-| Redes de pago | Mastercard · ACH Colombia · Transfiya |
+| Redes de pago | Mastercard · Visa · ACH Colombia · Transfiya |
 | Corresponsales | Efecty · Baloto · puntos Éxito |
 
 ### Por qué Sedpe y no banco
 La licencia Sedpe (el mismo esquema de Nequi y Daviplata) permite captar depósitos de bajo valor, operar wallets y conectarse a Transfiya/ACH sin requerir encaje bancario completo. Esto define los topes de saldo, los límites de transacción diaria y los requisitos de SARLAFT que aparecen en los casos de estudio.
 
-### Por qué Mastercard
-Para una fintech en etapa de crecimiento en Colombia, el programa de emisión de Mastercard ofrece mejores condiciones de acceso que Visa en este mercado. Esto es relevante al analizar interchange fees, unit economics de tarjeta y los flujos de autorización → compensación → liquidación.
+### Redes de tarjetas: Mastercard y Visa
+Kipo opera con ambas redes para maximizar cobertura y flexibilidad en el programa de emisión. Mastercard ofrece mejores condiciones de acceso para fintechs en etapa de crecimiento en Colombia; Visa amplía la aceptación internacional y el acceso a ciertos segmentos de comercios. Esto es relevante al analizar interchange fees, unit economics de tarjeta y los flujos de autorización → compensación → liquidación, que varían entre redes.
 
 ---
 
 ## Stack técnico relevante
 
 ```
-Emisión de tarjetas     Mastercard Debit Issuing Program
+Emisión de tarjetas     Mastercard Debit Issuing Program · Visa Debit Program
 Transferencias          ACH Colombia · Transfiya
 Pagos online            PSE (débito bancario)
 Autenticación           3DS2 (3-D Secure 2.x)
@@ -89,7 +89,7 @@ Cumplimiento            SARLAFT · LAFT · reporte a UIAF
 
 | # | Caso | Conceptos clave |
 |---|---|---|
-| 01 | Flujo completo de pago con tarjeta débito Mastercard | Autorización, captura, liquidación, interchange, contracargos |
+| 01 | Flujo completo de pago con tarjeta débito (Mastercard · Visa) | Autorización, captura, liquidación, interchange, contracargos |
 | 02 | Cash-in vía corresponsal y acreditación en wallet | Protocolo corresponsal, conciliación, prevención de fraude en efectivo |
 | 03 | Pagos QR interoperables con Transfiya | Generación de QR, instrucción de pago, tiempo de respuesta, fallback |
 | 04 | Transferencias ACH en tiempo real | Ventanas de compensación, manejo de errores, devoluciones |
@@ -116,8 +116,9 @@ Kipo es una empresa ficticia construida tomando como referencia el funcionamient
 
 Kipo es una empresa ficticia construida para tener un contexto concreto desde donde explorar y compartir cómo funcionan los pagos en Colombia y Latam. Todo el contenido (empresa, métricas, clientes) es ficticio y tiene fines educativos.
 
-Los casos de estudio aterrizan conceptos reales del ecosistema: regulación SFC/UIAF, redes ACH y Transfiya, emisión Mastercard, flujos de autorización y liquidación, y arquitecturas BaaS — usando a Kipo como hilo conductor.
+Los casos de estudio aterrizan conceptos reales del ecosistema: regulación SFC/UIAF, redes ACH y Transfiya, emisión Mastercard y Visa, flujos de autorización y liquidación, y arquitecturas BaaS — usando a Kipo como hilo conductor.
 
 ---
 
-*Construido sobre los materiales del Roadmap para PM de Payments de Zaira Zatarain y el ecosistema real de pagos colombiano.*
+*Construido sobre los materiales del [Roadmap para PM de Payments de Zaira Zatarain]([https://www.enlace.com](https://zzatarain.gumroad.com/l/roadmap-pagos?layout=profile)) y el ecosistema real de pagos colombiano.*
+
