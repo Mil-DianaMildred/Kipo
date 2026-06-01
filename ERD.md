@@ -1,6 +1,6 @@
 # Esquema de datos — Pagos con tarjeta
 
-> Caso de estudio 01 · Kipo Fintech · Ciclo de vida completo de una transacción con tarjeta débito (Mastercard · Visa).
+> Caso de estudio 01 · Kipo Fintech · Ciclo de vida completo de una transacción con tarjeta débito y crédito (Mastercard · Visa).
 
 El esquema cubre desde la evaluación de riesgo previa a la autorización hasta la liquidación, reembolsos y disputas. Incluye catálogos de emisores, BINs, adquirentes y decline codes para análisis segmentado.
 
@@ -225,8 +225,8 @@ erDiagram
 | Tabla | Tipo | Propósito |
 |---|---|---|
 | `issuer` | Catálogo | Emisores (bancos y fintechs) con métricas de auth rate y soft decline rate por banco |
-| `bin_range` | Catálogo | Rangos de BIN asociados a cada emisor. Permite segmentar por tipo y nivel de tarjeta |
-| `card` | Catálogo | Instrumento de pago del usuario, vinculado a su BIN y por tanto a su emisor |
+| `bin_range` | Catálogo | Rangos de BIN asociados a cada emisor. Permite segmentar por tipo (débito / crédito), nivel y marca de tarjeta |
+| `card` | Catálogo | Instrumento de pago del usuario. Puede ser débito o crédito, vinculado a su BIN y por tanto a su emisor |
 | `merchant` | Catálogo | Comercios con MCC para análisis de interchange y segmentación por industria |
 | `acquirer` | Catálogo | Adquirentes con los que Kipo tiene contrato. Base para análisis de performance |
 | `decline_code_catalog` | Catálogo | Códigos de rechazo de Mastercard y Visa con descripción, tipo (hard/soft) y acción recomendada |
@@ -253,5 +253,3 @@ erDiagram
 | Cost per transaction | `settlement_batch` + `dispute` |
 | Settlement time | `capture` + `settlement_batch` |
 | Soft declines por emisor | `auth_attempt` + `payment_intent` + `card` + `bin_range` + `issuer` |
-
----
