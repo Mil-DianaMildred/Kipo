@@ -120,5 +120,5 @@ Los casos de estudio aterrizan conceptos reales del ecosistema: regulación SFC/
 
 ---
 
-*Construido sobre los materiales del [Roadmap para PM de Payments de Zaira Zatarain]([https://www.enlace.com](https://zzatarain.gumroad.com/l/roadmap-pagos?layout=profile)) y el ecosistema real de pagos colombiano.*
+*Construido sobre los materiales del [Roadmap para PM de Payments de Zaira Zatarain](https://zzatarain.gumroad.com/l/roadmap-pagos?layout=profile) y el ecosistema real de pagos colombiano.*
 
