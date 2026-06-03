@@ -1,0 +1,6 @@
+id,name,legal_name,mcc,mcc_description,country,city,channel,status,onboarded_at
+91a7e4db-0cdd-4a66-aaf0-04579e7f9bdb,Éxito,Éxito S.A.S.,5411,Grocery Stores,CO,Medellín,pos,active,2024-03-04 00:00:00 UTC
+3cb2fe9e-6df4-42fb-9548-43b0faea743f,Rappi CO,Rappi CO S.A.S.,5812,Eating Places,CO,Cali,ecommerce,active,2024-05-18 00:00:00 UTC
+cdcc440b-ccb6-43dd-903e-571f82cdcf18,Falabella CO,Falabella CO S.A.S.,5651,Retail Clothing Stores,CO,Bogotá,ecommerce,active,2024-03-27 00:00:00 UTC
+6f8ac734-03ad-4404-92d6-c8f550e24f3a,InDriver CO,InDriver CO S.A.S.,4121,Taxicabs and Limousines,CO,Bogotá,in_app,active,2024-01-20 00:00:00 UTC
+3ad014dd-bc92-412f-8c16-9a8eee8b1424,Netflix CO,Netflix CO S.A.S.,7922,Digital Entertainment,CO,Bogotá,ecommerce,active,2024-07-04 00:00:00 UTC

@@ -1,0 +1,11 @@
+code,description,decline_type,recommended_action,source
+00,Approved,approved,none,Mastercard/Visa
+05,Do Not Honor,soft,Retry once after short delay,Mastercard/Visa
+51,Insufficient Funds,soft,Advise cardholder to add funds,Mastercard/Visa
+14,Invalid Card Number,hard,Request new card from cardholder,Mastercard/Visa
+54,Expired Card,hard,Request updated card information,Mastercard/Visa
+57,Transaction Not Permitted,soft,Retry with 3DS2 or alternative method,Mastercard/Visa
+91,Card Issuer Unavailable,soft,Retry after 30 minutes,Mastercard/Visa
+96,System Error,soft,Retry immediately,Mastercard/Visa
+41,Lost Card,hard,Do not retry,Mastercard/Visa
+43,Stolen Card,hard,Do not retry,Mastercard/Visa
