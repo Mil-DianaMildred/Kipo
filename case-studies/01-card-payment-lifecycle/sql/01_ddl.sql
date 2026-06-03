@@ -1,16 +1,12 @@
 -- ============================================================
 -- Case Study 01 · Kipo Fintech · Card Payment Lifecycle
 -- BigQuery DDL — create all 15 tables
--- Dataset: kipo_payments
+-- Dataset: kipo_cardpayments
 -- ============================================================
-
--- Replace `your-project-id` with your actual GCP project ID.
--- Run statements in order: catalogs first, then transactional tables.
-
 
 -- ── Catalog tables ──────────────────────────────────────────
 
-CREATE TABLE IF NOT EXISTS `your-project-id.kipo_payments.issuer` (
+CREATE TABLE IF NOT EXISTS `kipo-case01.kipo_cardpayments.issuer` (
   id                    STRING    NOT NULL,
   name                  STRING    NOT NULL,
   short_name            STRING,
@@ -22,7 +18,7 @@ CREATE TABLE IF NOT EXISTS `your-project-id.kipo_payments.issuer` (
   created_at            TIMESTAMP
 );
 
-CREATE TABLE IF NOT EXISTS `your-project-id.kipo_payments.bin_range` (
+CREATE TABLE IF NOT EXISTS `kipo-case01.kipo_cardpayments.bin_range` (
   id          STRING    NOT NULL,
   issuer_id   STRING    NOT NULL,
   bin_prefix  STRING,
@@ -34,7 +30,7 @@ CREATE TABLE IF NOT EXISTS `your-project-id.kipo_payments.bin_range` (
   created_at  TIMESTAMP
 );
 
-CREATE TABLE IF NOT EXISTS `your-project-id.kipo_payments.card` (
+CREATE TABLE IF NOT EXISTS `kipo-case01.kipo_cardpayments.card` (
   id            STRING    NOT NULL,
   user_id       STRING    NOT NULL,
   bin_range_id  STRING    NOT NULL,
@@ -46,7 +42,7 @@ CREATE TABLE IF NOT EXISTS `your-project-id.kipo_payments.card` (
   expires_at    TIMESTAMP
 );
 
-CREATE TABLE IF NOT EXISTS `your-project-id.kipo_payments.merchant` (
+CREATE TABLE IF NOT EXISTS `kipo-case01.kipo_cardpayments.merchant` (
   id              STRING    NOT NULL,
   name            STRING,
   legal_name      STRING,
@@ -59,7 +55,7 @@ CREATE TABLE IF NOT EXISTS `your-project-id.kipo_payments.merchant` (
   onboarded_at    TIMESTAMP
 );
 
-CREATE TABLE IF NOT EXISTS `your-project-id.kipo_payments.acquirer` (
+CREATE TABLE IF NOT EXISTS `kipo-case01.kipo_cardpayments.acquirer` (
   id                   STRING  NOT NULL,
   name                 STRING,
   processor_name       STRING,
@@ -69,7 +65,7 @@ CREATE TABLE IF NOT EXISTS `your-project-id.kipo_payments.acquirer` (
   status               STRING
 );
 
-CREATE TABLE IF NOT EXISTS `your-project-id.kipo_payments.decline_code_catalog` (
+CREATE TABLE IF NOT EXISTS `kipo-case01.kipo_cardpayments.decline_code_catalog` (
   code               STRING  NOT NULL,
   description        STRING,
   decline_type       STRING,
@@ -81,7 +77,7 @@ CREATE TABLE IF NOT EXISTS `your-project-id.kipo_payments.decline_code_catalog` 
 -- ── Transactional tables ─────────────────────────────────────
 
 -- Partitioned by date for cost-efficient queries over time ranges.
-CREATE TABLE IF NOT EXISTS `your-project-id.kipo_payments.payment_intent` (
+CREATE TABLE IF NOT EXISTS `kipo-case01.kipo_cardpayments.payment_intent` (
   id               STRING    NOT NULL,
   card_id          STRING    NOT NULL,
   network_token    STRING,
@@ -99,7 +95,7 @@ CREATE TABLE IF NOT EXISTS `your-project-id.kipo_payments.payment_intent` (
 )
 PARTITION BY DATE(created_at);
 
-CREATE TABLE IF NOT EXISTS `your-project-id.kipo_payments.risk_evaluation` (
+CREATE TABLE IF NOT EXISTS `kipo-case01.kipo_cardpayments.risk_evaluation` (
   id                 STRING    NOT NULL,
   payment_intent_id  STRING    NOT NULL,
   fraud_score        INT64,
@@ -115,7 +111,7 @@ CREATE TABLE IF NOT EXISTS `your-project-id.kipo_payments.risk_evaluation` (
 );
 
 -- Clustered by payment_intent_id to speed up per-intent lookups.
-CREATE TABLE IF NOT EXISTS `your-project-id.kipo_payments.auth_attempt` (
+CREATE TABLE IF NOT EXISTS `kipo-case01.kipo_cardpayments.auth_attempt` (
   id                 STRING    NOT NULL,
   payment_intent_id  STRING    NOT NULL,
   acquirer_id        STRING    NOT NULL,
@@ -129,7 +125,7 @@ CREATE TABLE IF NOT EXISTS `your-project-id.kipo_payments.auth_attempt` (
 )
 CLUSTER BY payment_intent_id;
 
-CREATE TABLE IF NOT EXISTS `your-project-id.kipo_payments.authorization` (
+CREATE TABLE IF NOT EXISTS `kipo-case01.kipo_cardpayments.authorization` (
   id                    STRING    NOT NULL,
   payment_intent_id     STRING    NOT NULL,
   acquirer_id           STRING    NOT NULL,
@@ -146,7 +142,7 @@ CREATE TABLE IF NOT EXISTS `your-project-id.kipo_payments.authorization` (
   expires_at            TIMESTAMP
 );
 
-CREATE TABLE IF NOT EXISTS `your-project-id.kipo_payments.capture` (
+CREATE TABLE IF NOT EXISTS `kipo-case01.kipo_cardpayments.capture` (
   id                    STRING    NOT NULL,
   authorization_id      STRING    NOT NULL,
   captured_amount_usd   NUMERIC,
@@ -155,7 +151,7 @@ CREATE TABLE IF NOT EXISTS `your-project-id.kipo_payments.capture` (
   late_capture_at       TIMESTAMP
 );
 
-CREATE TABLE IF NOT EXISTS `your-project-id.kipo_payments.void_reversal` (
+CREATE TABLE IF NOT EXISTS `kipo-case01.kipo_cardpayments.void_reversal` (
   id               STRING    NOT NULL,
   authorization_id STRING    NOT NULL,
   reason           STRING,
@@ -163,7 +159,7 @@ CREATE TABLE IF NOT EXISTS `your-project-id.kipo_payments.void_reversal` (
   voided_at        TIMESTAMP
 );
 
-CREATE TABLE IF NOT EXISTS `your-project-id.kipo_payments.settlement_batch` (
+CREATE TABLE IF NOT EXISTS `kipo-case01.kipo_cardpayments.settlement_batch` (
   id                  STRING    NOT NULL,
   acquirer_id         STRING    NOT NULL,
   settlement_date     DATE,
@@ -177,7 +173,7 @@ CREATE TABLE IF NOT EXISTS `your-project-id.kipo_payments.settlement_batch` (
   created_at          TIMESTAMP
 );
 
-CREATE TABLE IF NOT EXISTS `your-project-id.kipo_payments.refund` (
+CREATE TABLE IF NOT EXISTS `kipo-case01.kipo_cardpayments.refund` (
   id                  STRING    NOT NULL,
   capture_id          STRING    NOT NULL,
   settlement_batch_id STRING,
@@ -190,7 +186,7 @@ CREATE TABLE IF NOT EXISTS `your-project-id.kipo_payments.refund` (
   processed_at        TIMESTAMP
 );
 
-CREATE TABLE IF NOT EXISTS `your-project-id.kipo_payments.dispute` (
+CREATE TABLE IF NOT EXISTS `kipo-case01.kipo_cardpayments.dispute` (
   id                  STRING    NOT NULL,
   capture_id          STRING    NOT NULL,
   chargeback_id       STRING,
