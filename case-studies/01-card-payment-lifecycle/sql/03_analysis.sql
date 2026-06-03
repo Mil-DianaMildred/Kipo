@@ -14,7 +14,7 @@ SELECT
   COUNT(*)                                                 AS total_attempts,
   COUNTIF(aa.response_code = '00')                         AS approved,
   ROUND(COUNTIF(aa.response_code = '00') / COUNT(*), 4)   AS auth_rate
-FROM `your-project-id.kipo_payments.auth_attempt` aa
+FROM `kipo-case01.kipo_cardpayments.auth_attempt` aa
 GROUP BY 1
 ORDER BY 1;
 
@@ -29,11 +29,11 @@ SELECT
   COUNT(*)                                                 AS total_attempts,
   COUNTIF(aa.response_code = '00')                         AS approved,
   ROUND(COUNTIF(aa.response_code = '00') / COUNT(*), 4)   AS auth_rate
-FROM `your-project-id.kipo_payments.auth_attempt`  aa
-JOIN `your-project-id.kipo_payments.payment_intent` pi ON aa.payment_intent_id = pi.id
-JOIN `your-project-id.kipo_payments.card`           c  ON pi.card_id = c.id
-JOIN `your-project-id.kipo_payments.bin_range`      br ON c.bin_range_id = br.id
-JOIN `your-project-id.kipo_payments.issuer`         i  ON br.issuer_id = i.id
+FROM `kipo-case01.kipo_cardpayments.auth_attempt`  aa
+JOIN `kipo-case01.kipo_cardpayments.payment_intent` pi ON aa.payment_intent_id = pi.id
+JOIN `kipo-case01.kipo_cardpayments.card`           c  ON pi.card_id = c.id
+JOIN `kipo-case01.kipo_cardpayments.bin_range`      br ON c.bin_range_id = br.id
+JOIN `kipo-case01.kipo_cardpayments.issuer`         i  ON br.issuer_id = i.id
 GROUP BY 1, 2
 ORDER BY auth_rate ASC;
 
@@ -48,8 +48,8 @@ SELECT
   dc.decline_type,
   COUNT(*)                                                 AS total_declines,
   ROUND(COUNT(*) / SUM(COUNT(*)) OVER (), 4)              AS pct_of_all_declines
-FROM `your-project-id.kipo_payments.auth_attempt`    aa
-JOIN `your-project-id.kipo_payments.decline_code_catalog` dc ON aa.decline_code = dc.code
+FROM `kipo-case01.kipo_cardpayments.auth_attempt`    aa
+JOIN `kipo-case01.kipo_cardpayments.decline_code_catalog` dc ON aa.decline_code = dc.code
 WHERE aa.response_code != '00'
 GROUP BY 1, 2, 3
 ORDER BY total_declines DESC
@@ -64,11 +64,11 @@ SELECT
   i.name                                                   AS issuer,
   aa.decline_type,
   COUNT(*)                                                 AS decline_count
-FROM `your-project-id.kipo_payments.auth_attempt`   aa
-JOIN `your-project-id.kipo_payments.payment_intent` pi ON aa.payment_intent_id = pi.id
-JOIN `your-project-id.kipo_payments.card`           c  ON pi.card_id = c.id
-JOIN `your-project-id.kipo_payments.bin_range`      br ON c.bin_range_id = br.id
-JOIN `your-project-id.kipo_payments.issuer`         i  ON br.issuer_id = i.id
+FROM `kipo-case01.kipo_cardpayments.auth_attempt`   aa
+JOIN `kipo-case01.kipo_cardpayments.payment_intent` pi ON aa.payment_intent_id = pi.id
+JOIN `kipo-case01.kipo_cardpayments.card`           c  ON pi.card_id = c.id
+JOIN `kipo-case01.kipo_cardpayments.bin_range`      br ON c.bin_range_id = br.id
+JOIN `kipo-case01.kipo_cardpayments.issuer`         i  ON br.issuer_id = i.id
 WHERE aa.decline_type IN ('soft', 'hard')
 GROUP BY 1, 2
 ORDER BY 1, 2;
@@ -84,9 +84,9 @@ SELECT
   COUNT(*)                                                 AS total_attempts,
   COUNTIF(aa.response_code = '00')                         AS approved,
   ROUND(COUNTIF(aa.response_code = '00') / COUNT(*), 4)   AS auth_rate
-FROM `your-project-id.kipo_payments.auth_attempt`   aa
-JOIN `your-project-id.kipo_payments.payment_intent` pi ON aa.payment_intent_id = pi.id
-JOIN `your-project-id.kipo_payments.card`           c  ON pi.card_id = c.id
+FROM `kipo-case01.kipo_cardpayments.auth_attempt`   aa
+JOIN `kipo-case01.kipo_cardpayments.payment_intent` pi ON aa.payment_intent_id = pi.id
+JOIN `kipo-case01.kipo_cardpayments.card`           c  ON pi.card_id = c.id
 GROUP BY 1, 2
 ORDER BY 1, 2;
 
@@ -101,11 +101,11 @@ WITH first_attempts AS (
     aa.decline_type,
     aa.retried,
     i.name AS issuer
-  FROM `your-project-id.kipo_payments.auth_attempt`   aa
-  JOIN `your-project-id.kipo_payments.payment_intent` pi ON aa.payment_intent_id = pi.id
-  JOIN `your-project-id.kipo_payments.card`           c  ON pi.card_id = c.id
-  JOIN `your-project-id.kipo_payments.bin_range`      br ON c.bin_range_id = br.id
-  JOIN `your-project-id.kipo_payments.issuer`         i  ON br.issuer_id = i.id
+  FROM `kipo-case01.kipo_cardpayments.auth_attempt`   aa
+  JOIN `kipo-case01.kipo_cardpayments.payment_intent` pi ON aa.payment_intent_id = pi.id
+  JOIN `kipo-case01.kipo_cardpayments.card`           c  ON pi.card_id = c.id
+  JOIN `kipo-case01.kipo_cardpayments.bin_range`      br ON c.bin_range_id = br.id
+  JOIN `kipo-case01.kipo_cardpayments.issuer`         i  ON br.issuer_id = i.id
   WHERE aa.attempt_number = 1
     AND aa.decline_type = 'soft'
 ),
@@ -113,7 +113,7 @@ second_attempts AS (
   SELECT
     payment_intent_id,
     MAX(CASE WHEN response_code = '00' THEN 1 ELSE 0 END) AS retry_succeeded
-  FROM `your-project-id.kipo_payments.auth_attempt`
+  FROM `kipo-case01.kipo_cardpayments.auth_attempt`
   WHERE attempt_number = 2
   GROUP BY payment_intent_id
 )
@@ -139,7 +139,7 @@ SELECT
   COUNT(*)                                                 AS total_attempts,
   COUNTIF(aa.response_code = '00')                         AS approved,
   ROUND(COUNTIF(aa.response_code = '00') / COUNT(*), 4)   AS auth_rate
-FROM `your-project-id.kipo_payments.auth_attempt` aa
-JOIN `your-project-id.kipo_payments.acquirer`     aq ON aa.acquirer_id = aq.id
+FROM `kipo-case01.kipo_cardpayments.auth_attempt` aa
+JOIN `kipo-case01.kipo_cardpayments.acquirer`     aq ON aa.acquirer_id = aq.id
 GROUP BY 1, 2
 ORDER BY auth_rate ASC;
