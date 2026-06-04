@@ -1,8 +1,3 @@
--- ============================================================
--- Case Study 01 · Kipo Fintech · Card Payment Lifecycle
--- BigQuery DDL — create all 15 tables
--- Dataset: kipo_cardpayments
--- ============================================================
 
 -- ── Catalog tables ──────────────────────────────────────────
 

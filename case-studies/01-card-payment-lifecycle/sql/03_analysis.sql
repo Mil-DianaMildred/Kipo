@@ -143,3 +143,204 @@ FROM `kipo-case01.kipo_cardpayments.auth_attempt` aa
 JOIN `kipo-case01.kipo_cardpayments.acquirer`     aq ON aa.acquirer_id = aq.id
 GROUP BY 1, 2
 ORDER BY auth_rate ASC;
+
+
+-- ============================================================
+-- PAGE 2 · Acceptance Rate
+-- Acceptance rate = % of payment intents that result in a
+-- successful capture, covering all drop-off points:
+-- risk blocks, auth declines, and capture failures.
+-- ============================================================
+
+
+-- ── Q8 · Payment funnel (acceptance rate overview) ────────────────────────────
+-- Business question: Where in the funnel are we losing payments?
+-- Chart: Scorecard row — one tile per funnel stage.
+
+WITH funnel AS (
+  SELECT
+    pi.id                AS intent_id,
+    re.decision          AS risk_decision,
+    aa.any_attempted,
+    auth.authorized,
+    cap.captured
+  FROM `kipo-case01.kipo_cardpayments.payment_intent` pi
+  LEFT JOIN `kipo-case01.kipo_cardpayments.risk_evaluation` re
+    ON re.payment_intent_id = pi.id
+  LEFT JOIN (
+    SELECT DISTINCT payment_intent_id, TRUE AS any_attempted
+    FROM `kipo-case01.kipo_cardpayments.auth_attempt`
+  ) aa ON aa.payment_intent_id = pi.id
+  LEFT JOIN (
+    SELECT DISTINCT payment_intent_id, TRUE AS authorized
+    FROM `kipo-case01.kipo_cardpayments.authorization`
+    WHERE response_code = '00'
+  ) auth ON auth.payment_intent_id = pi.id
+  LEFT JOIN (
+    SELECT DISTINCT au.payment_intent_id, TRUE AS captured
+    FROM `kipo-case01.kipo_cardpayments.capture` cap
+    JOIN `kipo-case01.kipo_cardpayments.authorization` au ON cap.authorization_id = au.id
+  ) cap ON cap.payment_intent_id = pi.id
+)
+SELECT
+  COUNT(*)                                               AS total_intents,
+  COUNTIF(risk_decision = 'block')                       AS risk_blocked,
+  ROUND(COUNTIF(risk_decision = 'block') / COUNT(*), 4)  AS risk_block_rate,
+  COUNTIF(any_attempted)                                 AS attempted,
+  ROUND(COUNTIF(any_attempted) / COUNT(*), 4)            AS attempt_rate,
+  COUNTIF(authorized)                                    AS authorized,
+  ROUND(COUNTIF(authorized) / COUNT(*), 4)               AS auth_rate,
+  COUNTIF(captured)                                      AS captured,
+  ROUND(COUNTIF(captured) / COUNT(*), 4)                 AS acceptance_rate
+FROM funnel;
+
+
+-- ── Q9 · Daily acceptance rate vs auth rate trend ─────────────────────────────
+-- Business question: Do acceptance rate and auth rate move together, or diverge?
+-- Chart: Dual-line time series — acceptance_rate and auth_rate on the same axis.
+
+WITH daily_outcomes AS (
+  SELECT
+    DATE(pi.created_at) AS txn_date,
+    pi.id               AS intent_id,
+    auth.authorized,
+    cap.captured
+  FROM `kipo-case01.kipo_cardpayments.payment_intent` pi
+  LEFT JOIN (
+    SELECT DISTINCT payment_intent_id, TRUE AS authorized
+    FROM `kipo-case01.kipo_cardpayments.authorization`
+    WHERE response_code = '00'
+  ) auth ON auth.payment_intent_id = pi.id
+  LEFT JOIN (
+    SELECT DISTINCT au.payment_intent_id, TRUE AS captured
+    FROM `kipo-case01.kipo_cardpayments.capture` cap
+    JOIN `kipo-case01.kipo_cardpayments.authorization` au ON cap.authorization_id = au.id
+  ) cap ON cap.payment_intent_id = pi.id
+)
+SELECT
+  txn_date,
+  COUNT(*)                                       AS total_intents,
+  COUNTIF(authorized)                            AS authorized_count,
+  COUNTIF(captured)                              AS captured_count,
+  ROUND(COUNTIF(authorized) / COUNT(*), 4)       AS auth_rate,
+  ROUND(COUNTIF(captured) / COUNT(*), 4)         AS acceptance_rate
+FROM daily_outcomes
+GROUP BY 1
+ORDER BY 1;
+
+
+-- ── Q10 · Acceptance rate by channel ──────────────────────────────────────────
+-- Business question: Which channel (in-store / online / mobile) has the lowest acceptance?
+-- Chart: Grouped bar — auth_rate vs acceptance_rate per channel.
+
+WITH intent_outcome AS (
+  SELECT
+    pi.channel,
+    pi.id AS intent_id,
+    auth.authorized,
+    cap.captured
+  FROM `kipo-case01.kipo_cardpayments.payment_intent` pi
+  LEFT JOIN (
+    SELECT DISTINCT payment_intent_id, TRUE AS authorized
+    FROM `kipo-case01.kipo_cardpayments.authorization`
+    WHERE response_code = '00'
+  ) auth ON auth.payment_intent_id = pi.id
+  LEFT JOIN (
+    SELECT DISTINCT au.payment_intent_id, TRUE AS captured
+    FROM `kipo-case01.kipo_cardpayments.capture` cap
+    JOIN `kipo-case01.kipo_cardpayments.authorization` au ON cap.authorization_id = au.id
+  ) cap ON cap.payment_intent_id = pi.id
+)
+SELECT
+  channel,
+  COUNT(*)                                       AS total_intents,
+  COUNTIF(authorized)                            AS authorized,
+  COUNTIF(captured)                              AS captured,
+  ROUND(COUNTIF(authorized) / COUNT(*), 4)       AS auth_rate,
+  ROUND(COUNTIF(captured) / COUNT(*), 4)         AS acceptance_rate
+FROM intent_outcome
+GROUP BY 1
+ORDER BY acceptance_rate ASC;
+
+
+-- ── Q11 · Risk block breakdown by fraud score band ────────────────────────────
+-- Business question: What fraud score thresholds are killing acceptance?
+-- Chart: Stacked bar — intents per score band, split by risk decision (pass/block).
+
+SELECT
+  CASE
+    WHEN re.fraud_score < 30 THEN '1 · Low (0–29)'
+    WHEN re.fraud_score < 60 THEN '2 · Medium (30–59)'
+    WHEN re.fraud_score < 80 THEN '3 · High (60–79)'
+    ELSE                          '4 · Very High (80+)'
+  END                                            AS fraud_score_band,
+  re.decision,
+  COUNT(*)                                       AS intents,
+  ROUND(COUNT(*) / SUM(COUNT(*)) OVER (PARTITION BY re.decision), 4) AS pct_within_decision
+FROM `kipo-case01.kipo_cardpayments.risk_evaluation` re
+GROUP BY 1, 2
+ORDER BY 1, 2;
+
+
+-- ── Q12 · 3DS impact on post-auth capture rate ────────────────────────────────
+-- Business question: Does 3DS friction cause customers to abandon after auth?
+-- Chart: Table — rows = 3DS result, columns = authorizations / captured / capture rate.
+
+WITH auth_with_capture AS (
+  SELECT
+    au.is_3ds,
+    au.three_ds_result,
+    au.payment_intent_id,
+    cap.captured
+  FROM `kipo-case01.kipo_cardpayments.authorization` au
+  LEFT JOIN (
+    SELECT DISTINCT au2.payment_intent_id, TRUE AS captured
+    FROM `kipo-case01.kipo_cardpayments.capture` cap2
+    JOIN `kipo-case01.kipo_cardpayments.authorization` au2 ON cap2.authorization_id = au2.id
+  ) cap ON cap.payment_intent_id = au.payment_intent_id
+)
+SELECT
+  is_3ds,
+  COALESCE(three_ds_result, 'N/A')               AS three_ds_result,
+  COUNT(*)                                       AS authorizations,
+  COUNTIF(captured)                              AS captured,
+  ROUND(COUNTIF(captured) / COUNT(*), 4)         AS capture_to_auth_rate
+FROM auth_with_capture
+GROUP BY 1, 2
+ORDER BY 1, 2;
+
+
+-- ── Q13 · Acceptance rate by merchant category (top 10 by volume) ─────────────
+-- Business question: Are certain merchant categories dragging acceptance down?
+-- Chart: Horizontal bar chart sorted by acceptance_rate ascending.
+
+WITH intent_outcome AS (
+  SELECT
+    m.mcc_description,
+    pi.id AS intent_id,
+    auth.authorized,
+    cap.captured
+  FROM `kipo-case01.kipo_cardpayments.payment_intent` pi
+  JOIN `kipo-case01.kipo_cardpayments.merchant` m ON pi.merchant_id = m.id
+  LEFT JOIN (
+    SELECT DISTINCT payment_intent_id, TRUE AS authorized
+    FROM `kipo-case01.kipo_cardpayments.authorization`
+    WHERE response_code = '00'
+  ) auth ON auth.payment_intent_id = pi.id
+  LEFT JOIN (
+    SELECT DISTINCT au.payment_intent_id, TRUE AS captured
+    FROM `kipo-case01.kipo_cardpayments.capture` cap
+    JOIN `kipo-case01.kipo_cardpayments.authorization` au ON cap.authorization_id = au.id
+  ) cap ON cap.payment_intent_id = pi.id
+)
+SELECT
+  mcc_description,
+  COUNT(*)                                       AS total_intents,
+  COUNTIF(authorized)                            AS authorized,
+  COUNTIF(captured)                              AS captured,
+  ROUND(COUNTIF(authorized) / COUNT(*), 4)       AS auth_rate,
+  ROUND(COUNTIF(captured) / COUNT(*), 4)         AS acceptance_rate
+FROM intent_outcome
+GROUP BY 1
+ORDER BY total_intents DESC
+LIMIT 10;

@@ -44,7 +44,7 @@ For charts that use JOINs across tables, paste the corresponding SQL query into 
   SELECT
     ROUND(COUNTIF(response_code = '00') / COUNT(*), 4) AS auth_rate,
     COUNT(*) AS total_attempts
-  FROM `your-project-id.kipo_payments.auth_attempt`
+  FROM `kipo-case01.kipo_cardpayments.auth_attempt`
   ```
 - Add two **Scorecard** charts: one for `auth_rate` (formatted as %), one for `total_attempts`
 
@@ -105,3 +105,83 @@ Add a **date range filter** at the top of the dashboard so viewers can compare P
 - Field: `attempt_date` (Q1 data source)
 
 Add a **drop-down filter** for `issuer` so viewers can isolate one bank.
+
+---
+
+## 5. Page 2 — Acceptance Rate
+
+**Definition:** acceptance rate = % of payment intents that result in a successful capture.
+This is broader than auth rate — it captures every drop-off point in the funnel: risk blocks, issuer declines, and post-auth abandonment.
+
+### Layout
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│  KPI — Acceptance Rate  │  KPI — Auth Rate  │  KPI — Risk Block Rate │
+├────────────────────────────────────────────────────────────────────-┤
+│  Q8 — Funnel breakdown (scorecard row: intents → attempted →        │
+│        authorized → captured, with % at each stage)                 │
+├─────────────────────────────────────────────────────────────────────┤
+│  Q9 — Daily acceptance rate vs auth rate (dual-line, full width)    │
+├──────────────────────────────────┬──────────────────────────────────┤
+│  Q10 — Acceptance rate by        │  Q11 — Risk block by fraud       │
+│  channel (grouped bar)           │  score band (stacked bar)        │
+├──────────────────────────────────┼──────────────────────────────────┤
+│  Q12 — 3DS impact on capture     │  Q13 — Acceptance by merchant    │
+│  rate (table)                    │  category, top 10 (bar)          │
+└──────────────────────────────────┴──────────────────────────────────┘
+```
+
+### KPI scorecards (top row)
+- Data source: Q8 custom query
+- Three **Scorecard** charts: `acceptance_rate` (%), `auth_rate` (%), `risk_block_rate` (%)
+- Apply conditional formatting: red if `acceptance_rate` < 0.80
+
+### Q8 — Funnel breakdown
+- Custom query: Q8 from `03_analysis.sql`
+- Chart type: Four **Scorecard** tiles in a horizontal row, one per funnel stage:
+  `total_intents` → `attempted` (+ `attempt_rate`) → `authorized` (+ `auth_rate`) → `captured` (+ `acceptance_rate`)
+- This shows absolute drop-off at each step
+
+### Q9 — Daily acceptance rate vs auth rate
+- Custom query: Q9 from `03_analysis.sql`
+- Chart type: **Time series** with two metrics: `auth_rate` (blue) and `acceptance_rate` (green)
+- Dimension: `txn_date`
+- Add a **reference line** at 2025-01-31 (same as Page 1) to mark the rate drop
+- If the lines diverge, it signals a problem outside the issuer (e.g. risk blocks or capture failures)
+
+### Q10 — Acceptance rate by channel
+- Custom query: Q10 from `03_analysis.sql`
+- Chart type: **Grouped bar chart**
+- Dimension: `channel`
+- Metrics: `auth_rate` and `acceptance_rate` as two bars per channel
+- Sort by `acceptance_rate` ascending to surface the worst channel first
+
+### Q11 — Risk block breakdown by fraud score band
+- Custom query: Q11 from `03_analysis.sql`
+- Chart type: **Stacked bar chart**
+- Dimension: `fraud_score_band`
+- Breakdown: `decision` (pass = green, block = red)
+- Metric: `intents`
+- This shows which score bands contain the most blocked payments
+
+### Q12 — 3DS impact on post-auth capture rate
+- Custom query: Q12 from `03_analysis.sql`
+- Chart type: **Table** with conditional formatting
+- Dimensions: `is_3ds`, `three_ds_result`
+- Metrics: `authorizations`, `captured`, `capture_to_auth_rate`
+- Apply conditional formatting on `capture_to_auth_rate`: red below 0.90
+- Signals whether 3DS friction causes customers to drop off after a successful auth
+
+### Q13 — Acceptance rate by merchant category
+- Custom query: Q13 from `03_analysis.sql`
+- Chart type: **Bar chart** (horizontal)
+- Dimension: `mcc_description`
+- Metric: `acceptance_rate`
+- Secondary metric: `total_intents` (bubble size or tooltip)
+- Sort ascending by `acceptance_rate` to put worst categories at top
+- Limit to top 10 by volume (already applied in query)
+
+### Filters for Page 2
+- Reuse the same **date range control** from Page 1 (apply to Q9 via `txn_date`)
+- Add a **drop-down filter** for `channel` linked to Q10

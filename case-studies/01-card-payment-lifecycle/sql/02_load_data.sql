@@ -1,21 +1,3 @@
--- ============================================================
--- Case Study 01 · Kipo Fintech · Card Payment Lifecycle
--- Load CSV data from Google Cloud Storage into BigQuery
--- ============================================================
---
--- Prerequisites:
---   1. Run 01_ddl.sql to create all tables.
---   2. Upload the contents of data/raw/ to a GCS bucket:
---        gsutil cp data/raw/*.csv gs://your-bucket/kipo/raw/
---   3. Replace `your-project-id` and `your-bucket` below.
---   4. Run each LOAD DATA statement in BigQuery (UI or bq CLI).
---
--- Alternative (bq CLI):
---   bq load --source_format=CSV --skip_leading_rows=1 \
---     your-project-id:kipo_payments.issuer \
---     gs://your-bucket/kipo/raw/issuers.csv
--- ============================================================
-
 LOAD DATA INTO `kipo-case01.kipo_cardpayments.issuer`
   (id, name, short_name, country, network, issuer_type,
    avg_auth_rate, avg_soft_decline_rate, created_at)
