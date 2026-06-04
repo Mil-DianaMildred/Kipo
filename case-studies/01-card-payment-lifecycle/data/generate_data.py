@@ -96,7 +96,7 @@ for d in ISSUER_DATA:
         "network":               d["network"],
         "issuer_type":           d["issuer_type"],
         "avg_auth_rate":         round(sum(ISSUER_AUTH_RATES[d["name"]]) / 2, 4),
-        "avg_soft_decline_rate": round(random.uniform(0.04, 0.12), 4),
+        "avg_soft_decline_rate": round((1 - sum(ISSUER_AUTH_RATES[d["name"]]) / 2) * 0.80, 4),
         "created_at":            ts(START_DATE - timedelta(days=random.randint(180, 730))),
     }
     issuers.append(i)
@@ -269,7 +269,7 @@ for _ in range(N_PAYMENT_INTENTS):
     merchant_id = merchant_info["id"]
     channel = merchant_info["channel"]
     entry_mode = "manual" if channel == "ecommerce" else random.choice(["chip", "contactless", "token"])
-    amount = round(random.uniform(2.0, 500.0), 2)
+    amount = round(random.uniform(1.0, 60.0), 2)
 
     pi = {
         "id":              uid(),
@@ -497,7 +497,7 @@ for _ in range(N_PAYMENT_INTENTS):
             "reason_code":         random.choice(["4853", "4855", "4863", "UA02"]),
             "dispute_type":        random.choice(["fraud", "not_as_described", "not_received"]),
             "disputed_amount_usd": cap_amount,
-            "chargeback_fee_usd":  round(random.uniform(15.0, 25.0), 2),
+            "chargeback_fee_usd":  round(random.uniform(5.0, 15.0), 2),
             "status":              random.choice(["open", "won", "lost"]),
             "outcome":             random.choice(["merchant_win", "cardholder_win", "pending"]),
             "opened_at":           ts(disp_at),
