@@ -344,3 +344,172 @@ FROM intent_outcome
 GROUP BY 1
 ORDER BY total_intents DESC
 LIMIT 10;
+
+
+-- ============================================================
+-- PAGE 0 · Overview
+-- Six headline KPIs: authorization rate, acceptance rate,
+-- fraud rate, chargeback rate, cost per transaction,
+-- and average days to settlement.
+-- ============================================================
+
+
+-- ── OV1 · KPI overview scorecard ─────────────────────────────────────────────
+-- Business question: How is the business performing across all key metrics?
+-- Chart: Six Scorecard tiles in a horizontal row.
+
+WITH
+auth_kpi AS (
+  SELECT ROUND(COUNTIF(response_code = '00') / COUNT(*), 4) AS auth_rate
+  FROM `kipo-case01.kipo_cardpayments.auth_attempt`
+),
+acceptance_kpi AS (
+  SELECT ROUND(COUNTIF(cap.captured) / COUNT(*), 4) AS acceptance_rate
+  FROM `kipo-case01.kipo_cardpayments.payment_intent` pi
+  LEFT JOIN (
+    SELECT DISTINCT au.payment_intent_id, TRUE AS captured
+    FROM `kipo-case01.kipo_cardpayments.capture` c
+    JOIN `kipo-case01.kipo_cardpayments.authorization` au ON c.authorization_id = au.id
+  ) cap ON cap.payment_intent_id = pi.id
+),
+dispute_kpi AS (
+  SELECT
+    ROUND(
+      COUNT(DISTINCT CASE WHEN d.dispute_type = 'fraud' THEN cap.id END)
+      / NULLIF(COUNT(DISTINCT cap.id), 0), 4
+    ) AS fraud_rate,
+    ROUND(
+      COUNT(DISTINCT d.id) / NULLIF(COUNT(DISTINCT cap.id), 0), 4
+    ) AS chargeback_rate
+  FROM `kipo-case01.kipo_cardpayments.capture` cap
+  LEFT JOIN `kipo-case01.kipo_cardpayments.dispute` d ON d.capture_id = cap.id
+),
+cost_kpi AS (
+  SELECT
+    ROUND(
+      SUM(interchange_fee_usd + scheme_fee_usd + acquirer_fee_usd)
+      / NULLIF(SUM(transaction_count), 0), 4
+    ) AS cost_per_txn_usd
+  FROM `kipo-case01.kipo_cardpayments.settlement_batch`
+  WHERE status = 'settled'
+),
+cap_acq AS (
+  SELECT
+    cap.id              AS capture_id,
+    au.acquirer_id,
+    DATE(cap.captured_at) AS capture_date
+  FROM `kipo-case01.kipo_cardpayments.capture` cap
+  JOIN `kipo-case01.kipo_cardpayments.authorization` au ON cap.authorization_id = au.id
+),
+cap_settled AS (
+  SELECT
+    ca.capture_id,
+    ca.capture_date,
+    MIN(sb.settlement_date) AS settlement_date
+  FROM cap_acq ca
+  JOIN `kipo-case01.kipo_cardpayments.settlement_batch` sb
+    ON sb.acquirer_id = ca.acquirer_id
+   AND sb.settlement_date >= ca.capture_date
+   AND sb.status = 'settled'
+  GROUP BY ca.capture_id, ca.capture_date
+),
+settlement_kpi AS (
+  SELECT ROUND(AVG(DATE_DIFF(settlement_date, capture_date, DAY)), 1) AS avg_days_to_settlement
+  FROM cap_settled
+)
+SELECT
+  a.auth_rate,
+  b.acceptance_rate,
+  c.fraud_rate,
+  c.chargeback_rate,
+  d.cost_per_txn_usd,
+  e.avg_days_to_settlement
+FROM auth_kpi       a
+CROSS JOIN acceptance_kpi  b
+CROSS JOIN dispute_kpi     c
+CROSS JOIN cost_kpi        d
+CROSS JOIN settlement_kpi  e;
+
+
+-- ── OV3 · Fraud & chargeback rate by week ─────────────────────────────────────
+-- Business question: Are fraud and chargeback rates trending up over time?
+-- Chart: Dual-line time series — fraud_rate (red) and chargeback_rate (orange).
+-- Note: weekly granularity because dispute volumes are too low for meaningful daily rates.
+
+SELECT
+  DATE_TRUNC(DATE(cap.captured_at), WEEK)                                      AS week,
+  COUNT(DISTINCT cap.id)                                                       AS total_captures,
+  COUNT(DISTINCT CASE WHEN d.dispute_type = 'fraud' THEN cap.id END)           AS fraud_captures,
+  COUNT(DISTINCT d.id)                                                         AS total_chargebacks,
+  ROUND(
+    COUNT(DISTINCT CASE WHEN d.dispute_type = 'fraud' THEN cap.id END)
+    / NULLIF(COUNT(DISTINCT cap.id), 0), 4
+  )                                                                            AS fraud_rate,
+  ROUND(
+    COUNT(DISTINCT d.id) / NULLIF(COUNT(DISTINCT cap.id), 0), 4
+  )                                                                            AS chargeback_rate
+FROM `kipo-case01.kipo_cardpayments.capture` cap
+LEFT JOIN `kipo-case01.kipo_cardpayments.dispute` d ON d.capture_id = cap.id
+GROUP BY 1
+ORDER BY 1;
+
+
+-- ── OV4 · Cost per transaction by acquirer ────────────────────────────────────
+-- Business question: Which acquirer is most expensive? What drives the cost?
+-- Chart: Stacked bar (interchange / scheme / acquirer fees) + combo line for cost_per_txn_usd.
+
+SELECT
+  aq.name                                                                      AS acquirer,
+  SUM(sb.transaction_count)                                                   AS total_transactions,
+  ROUND(SUM(sb.interchange_fee_usd), 2)                                      AS interchange_fees_usd,
+  ROUND(SUM(sb.scheme_fee_usd), 2)                                           AS scheme_fees_usd,
+  ROUND(SUM(sb.acquirer_fee_usd), 2)                                         AS acquirer_fees_usd,
+  ROUND(SUM(sb.interchange_fee_usd + sb.scheme_fee_usd + sb.acquirer_fee_usd), 2) AS total_fees_usd,
+  ROUND(
+    SUM(sb.interchange_fee_usd + sb.scheme_fee_usd + sb.acquirer_fee_usd)
+    / NULLIF(SUM(sb.transaction_count), 0), 4
+  )                                                                           AS cost_per_txn_usd
+FROM `kipo-case01.kipo_cardpayments.settlement_batch` sb
+JOIN `kipo-case01.kipo_cardpayments.acquirer` aq ON sb.acquirer_id = aq.id
+WHERE sb.status = 'settled'
+GROUP BY aq.name
+ORDER BY cost_per_txn_usd DESC;
+
+
+-- ── OV5 · Time to settlement by acquirer ──────────────────────────────────────
+-- Business question: How quickly does each acquirer settle funds?
+-- Chart: Horizontal bar chart sorted by avg_days_to_settlement ascending.
+-- Method: for each capture, find the earliest settlement batch for the same acquirer
+--         on or after the capture date — this approximates the actual settlement cycle.
+
+WITH cap_acq AS (
+  SELECT
+    cap.id              AS capture_id,
+    au.acquirer_id,
+    DATE(cap.captured_at) AS capture_date
+  FROM `kipo-case01.kipo_cardpayments.capture` cap
+  JOIN `kipo-case01.kipo_cardpayments.authorization` au ON cap.authorization_id = au.id
+),
+cap_settled AS (
+  SELECT
+    ca.capture_id,
+    ca.acquirer_id,
+    ca.capture_date,
+    MIN(sb.settlement_date) AS settlement_date
+  FROM cap_acq ca
+  JOIN `kipo-case01.kipo_cardpayments.settlement_batch` sb
+    ON sb.acquirer_id = ca.acquirer_id
+   AND sb.settlement_date >= ca.capture_date
+   AND sb.status = 'settled'
+  GROUP BY ca.capture_id, ca.acquirer_id, ca.capture_date
+)
+SELECT
+  aq.name                                                                      AS acquirer,
+  COUNT(*)                                                                    AS captures_settled,
+  ROUND(AVG(DATE_DIFF(cs.settlement_date, cs.capture_date, DAY)), 1)         AS avg_days_to_settlement,
+  MIN(DATE_DIFF(cs.settlement_date, cs.capture_date, DAY))                   AS min_days,
+  MAX(DATE_DIFF(cs.settlement_date, cs.capture_date, DAY))                   AS max_days
+FROM cap_settled cs
+JOIN `kipo-case01.kipo_cardpayments.acquirer` aq ON cs.acquirer_id = aq.id
+GROUP BY aq.name, cs.acquirer_id
+ORDER BY avg_days_to_settlement ASC;

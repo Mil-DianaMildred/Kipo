@@ -185,3 +185,66 @@ This is broader than auth rate — it captures every drop-off point in the funne
 ### Filters for Page 2
 - Reuse the same **date range control** from Page 1 (apply to Q9 via `txn_date`)
 - Add a **drop-down filter** for `channel` linked to Q10
+
+---
+
+## 6. Page 0 — Overview
+
+**Purpose:** executive view of the six headline KPIs before drilling into any detail page. In Looker Studio, set this as the first page of the report.
+
+### Layout
+
+```
+┌────────────────────────────────────────────────────────────────────────────────────────┐
+│ Auth Rate │ Acceptance Rate │ Fraud Rate │ Chargeback Rate │ Cost/Txn │ Days to Sett. │
+├────────────────────────────────────────────────────────────────────────────────────────┤
+│  OV2 — Auth rate vs. acceptance rate trend (line, full width) — reuse Q9 query        │
+├──────────────────────────────────────┬─────────────────────────────────────────────────┤
+│  OV3 — Fraud & chargeback rate       │  OV4 — Cost per transaction by acquirer         │
+│  by week (dual-line time series)     │  (stacked bar: interchange / scheme / acq.)     │
+├──────────────────────────────────────┴─────────────────────────────────────────────────┤
+│  OV5 — Time to settlement by acquirer (horizontal bar, full width)                     │
+└────────────────────────────────────────────────────────────────────────────────────────┘
+```
+
+### KPI scorecards (top row)
+- Data source: OV1 custom query
+- Six **Scorecard** charts, one per metric:
+  - `auth_rate` — label "Auth Rate", conditional formatting: red < 0.85
+  - `acceptance_rate` — label "Acceptance Rate", conditional formatting: red < 0.80
+  - `fraud_rate` — label "Fraud Rate", conditional formatting: red > 0.01
+  - `chargeback_rate` — label "Chargeback Rate", conditional formatting: red > 0.02
+  - `cost_per_txn_usd` — label "Cost / Transaction (USD)"
+  - `avg_days_to_settlement` — label "Avg Days to Settlement"
+
+### OV2 — Auth rate vs. acceptance rate trend
+- Custom query: **Q9** from `03_analysis.sql` (same query used on Page 2)
+- Chart type: **Time series** — `auth_rate` (blue), `acceptance_rate` (green)
+- Dimension: `txn_date`
+- Add a **reference line** at 2025-01-31
+
+### OV3 — Fraud & chargeback rate by week
+- Custom query: OV3 from `03_analysis.sql`
+- Chart type: **Time series** — `fraud_rate` (red), `chargeback_rate` (orange)
+- Dimension: `week`
+- Weekly granularity is intentional: dispute volumes are too low for meaningful daily rates
+
+### OV4 — Cost per transaction by acquirer
+- Custom query: OV4 from `03_analysis.sql`
+- Chart type: **Stacked bar chart** with combo line
+- Dimension: `acquirer`
+- Stacked bars: `interchange_fees_usd`, `scheme_fees_usd`, `acquirer_fees_usd`
+- Combo line (right axis): `cost_per_txn_usd`
+- Sort by `cost_per_txn_usd` descending to surface the most expensive acquirer
+
+### OV5 — Time to settlement by acquirer
+- Custom query: OV5 from `03_analysis.sql`
+- Chart type: **Bar chart** (horizontal)
+- Dimension: `acquirer`
+- Metric: `avg_days_to_settlement`
+- Add a **reference line at 2** (industry standard T+2 settlement)
+- Add `min_days` and `max_days` as tooltip fields to show the range
+- Sort by `avg_days_to_settlement` ascending to surface the fastest acquirer
+
+### Filters for Page 0
+- Reuse the same **date range control** from Page 1 (apply to OV2 via `txn_date` and OV3 via `week`)
