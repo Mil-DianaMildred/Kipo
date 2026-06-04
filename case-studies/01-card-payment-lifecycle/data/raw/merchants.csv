@@ -1,6 +1,6 @@
 id,name,legal_name,mcc,mcc_description,country,city,channel,status,onboarded_at
-34e86a91-8a21-4359-aeaf-59abed4cdfca,Éxito,Éxito S.A.S.,5411,Grocery Stores,CO,Medellín,pos,active,2024-07-04 00:00:00 UTC
-4e2871ab-11f2-49d1-936a-6dafd1ef4757,Rappi CO,Rappi CO S.A.S.,5812,Eating Places,CO,Bogotá,ecommerce,active,2024-03-03 00:00:00 UTC
-c80e86a4-9e9e-4052-a3f3-201c4db778ce,Falabella CO,Falabella CO S.A.S.,5651,Retail Clothing Stores,CO,Medellín,ecommerce,active,2024-04-22 00:00:00 UTC
-22255009-6b05-4e6e-9edd-131c7f412dee,InDriver CO,InDriver CO S.A.S.,4121,Taxicabs and Limousines,CO,Medellín,in_app,active,2024-03-04 00:00:00 UTC
-4bbcbfc4-7c2b-4a65-b6a5-941b65cb86c4,Netflix CO,Netflix CO S.A.S.,7922,Digital Entertainment,CO,Cali,ecommerce,active,2024-05-18 00:00:00 UTC
+e168848e-e737-452d-b9fb-bd8d49d1635b,Éxito,Éxito S.A.S.,5411,Grocery Stores,CO,Medellín,pos,active,2024-07-04 00:00:00 UTC
+970e6597-a3aa-400d-8cc2-384cd435079f,Rappi CO,Rappi CO S.A.S.,5812,Eating Places,CO,Bogotá,ecommerce,active,2024-03-03 00:00:00 UTC
+1404dfb0-8ae5-49ac-a96b-3f2850956786,Falabella CO,Falabella CO S.A.S.,5651,Retail Clothing Stores,CO,Medellín,ecommerce,active,2024-04-22 00:00:00 UTC
+56ba219c-1409-4863-bda0-9758d13d4a23,InDriver CO,InDriver CO S.A.S.,4121,Taxicabs and Limousines,CO,Medellín,in_app,active,2024-03-04 00:00:00 UTC
+19f01f4a-9599-4142-9a61-4fe13b51f8e4,Netflix CO,Netflix CO S.A.S.,7922,Digital Entertainment,CO,Cali,ecommerce,active,2024-05-18 00:00:00 UTC

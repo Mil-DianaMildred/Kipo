@@ -280,7 +280,7 @@ for _ in range(N_PAYMENT_INTENTS):
         "order_id":        uid(),
         "customer_type":   random.choice(CUSTOMER_TYPES),
         "amount_usd":      amount,
-        "currency":        "COP",
+        "currency":        "USD",
         "channel":         channel,
         "entry_mode":      entry_mode,
         "idempotency_key": uid(),
