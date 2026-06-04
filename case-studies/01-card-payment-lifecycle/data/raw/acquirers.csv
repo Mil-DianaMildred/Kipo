@@ -1,4 +1,4 @@
 id,name,processor_name,network,country,historical_auth_rate,status
-14bb2d3a-4268-45b7-b068-247943bb3ac9,Credibanco,Credibanco,Visa,CO,0.8268,active
-f4ecc142-0a41-4875-bec1-c8dca8d9fd9d,Redeban,Redeban,Mastercard,CO,0.8619,active
-cd1dfe2d-5497-4c60-b006-3d5fb5f57b82,Yuno,Yuno,Mastercard/Visa,CO,0.8055,active
+27701749-885f-436c-9321-31d0d0ea41c3,Credibanco,Credibanco,Visa,CO,0.8991,active
+d81643bf-01f2-4383-896a-12ce98d40586,Redeban,Redeban,Mastercard,CO,0.8686,active
+7f91a8c6-93f6-4be3-96a3-16f94f4dd531,Yuno,Yuno,Mastercard/Visa,CO,0.8143,active

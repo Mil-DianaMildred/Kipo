@@ -1,6 +1,6 @@
 id,name,short_name,country,network,issuer_type,avg_auth_rate,avg_soft_decline_rate,created_at
-e8a3c691-8136-4982-a143-f04c15bba42a,Bancolombia,BCOL,CO,Mastercard,bank,0.77,0.0912,2024-06-10 00:00:00 UTC
-b50da9d0-2c36-45f8-844d-1ae3d829c0d3,Davivienda,DAVI,CO,Visa,bank,0.76,0.0993,2023-10-29 00:00:00 UTC
-ce370729-a1a2-4ca5-9348-ba6d91ea6920,Nubank CO,NUBK,CO,Mastercard,neobank,0.88,0.0579,2024-03-23 00:00:00 UTC
-beee3355-0f02-4e3d-83d1-1fec8d1f62c9,Nequi,NEQI,CO,Visa,neobank,0.87,0.0941,2024-04-07 00:00:00 UTC
-77826940-8ace-49d3-9857-65e20716ecbd,Kipo,KIPO,CO,Mastercard,fintech,0.9,0.0872,2024-06-03 00:00:00 UTC
+44721846-34f4-4e55-a922-647ce20864e6,Bancolombia,BCOL,CO,Mastercard,bank,0.77,0.184,2024-03-13 00:00:00 UTC
+0abc2e55-c5b1-4f5e-88e2-e42e9e5d68d8,Davivienda,DAVI,CO,Visa,bank,0.76,0.192,2024-06-10 00:00:00 UTC
+3af306cd-616e-44a7-8297-4085f7c17670,Nubank CO,NUBK,CO,Mastercard,neobank,0.88,0.096,2023-09-28 00:00:00 UTC
+3b8b5fd2-36f2-4a51-94c2-620b0f79b769,Nequi,NEQI,CO,Visa,neobank,0.87,0.104,2023-10-29 00:00:00 UTC
+9ddbbff8-a4ac-4717-8c69-887b4a49c2c5,Kipo,KIPO,CO,Mastercard,fintech,0.9,0.08,2023-11-20 00:00:00 UTC
