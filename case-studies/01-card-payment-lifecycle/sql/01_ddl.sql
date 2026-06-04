@@ -73,11 +73,11 @@ CREATE TABLE IF NOT EXISTS `kipo-case01.kipo_cardpayments.decline_code_catalog` 
 
 -- Partitioned by date for cost-efficient queries over time ranges.
 CREATE TABLE IF NOT EXISTS `kipo-case01.kipo_cardpayments.payment_intent` (
-  id               STRING    NOT NULL,
-  card_id          STRING    NOT NULL,
+  id               STRING,
+  card_id          STRING,
   network_token    STRING,
-  user_id          STRING    NOT NULL,
-  merchant_id      STRING    NOT NULL,
+  user_id          STRING,
+  merchant_id      STRING,
   order_id         STRING,
   customer_type    STRING,
   amount_usd       NUMERIC,
@@ -86,7 +86,7 @@ CREATE TABLE IF NOT EXISTS `kipo-case01.kipo_cardpayments.payment_intent` (
   entry_mode       STRING,
   idempotency_key  STRING,
   status           STRING,
-  created_at       TIMESTAMP NOT NULL
+  created_at       TIMESTAMP
 )
 PARTITION BY DATE(created_at);
 
@@ -107,9 +107,9 @@ CREATE TABLE IF NOT EXISTS `kipo-case01.kipo_cardpayments.risk_evaluation` (
 
 -- Clustered by payment_intent_id to speed up per-intent lookups.
 CREATE TABLE IF NOT EXISTS `kipo-case01.kipo_cardpayments.auth_attempt` (
-  id                 STRING    NOT NULL,
-  payment_intent_id  STRING    NOT NULL,
-  acquirer_id        STRING    NOT NULL,
+  id                 STRING,
+  payment_intent_id  STRING,
+  acquirer_id        STRING,
   attempt_number     INT64,
   routing_reason     STRING,
   response_code      STRING,
@@ -138,8 +138,8 @@ CREATE TABLE IF NOT EXISTS `kipo-case01.kipo_cardpayments.authorization` (
 );
 
 CREATE TABLE IF NOT EXISTS `kipo-case01.kipo_cardpayments.capture` (
-  id                    STRING    NOT NULL,
-  authorization_id      STRING    NOT NULL,
+  id                    STRING,
+  authorization_id      STRING,
   captured_amount_usd   NUMERIC,
   is_partial            BOOL,
   captured_at           TIMESTAMP,

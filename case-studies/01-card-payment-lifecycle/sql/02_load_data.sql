@@ -40,7 +40,21 @@ FROM FILES (
   uris = ['gs://kipo-case01-raw-data/kipo/raw/decline_code_catalog.csv']
 );
 
-LOAD DATA OVERWRITE `kipo-case01.kipo_cardpayments.payment_intent`
+LOAD DATA INTO `kipo-case01.kipo_cardpayments.payment_intent`
+  (id STRING,
+   card_id STRING,
+   network_token STRING,
+   user_id STRING,
+   merchant_id STRING,
+   order_id STRING,
+   customer_type STRING,
+   amount_usd NUMERIC,
+   currency STRING,
+   channel STRING,
+   entry_mode STRING,
+   idempotency_key STRING,
+   status STRING,
+   created_at TIMESTAMP)
 FROM FILES (
   format = 'CSV',
   skip_leading_rows = 1,
