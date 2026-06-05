@@ -53,21 +53,22 @@ Breaking auth rate by issuer reveals a clear pattern:
 
 | Issuer | Auth Rate (Phase 1) | Auth Rate (Phase 2) | Change |
 |---|---|---|---|
-| Bancolombia | ~84% | ~70% | −14 pp |
-| Davivienda | ~83% | ~69% | −14 pp |
-| Nubank CO | ~88% | ~88% | stable |
-| Nequi | ~87% | ~87% | stable |
-| Kipo (self-issued) | ~90% | ~90% | stable |
+| Bancolombia | ~84% | ~65% | −19 pp |
+| Davivienda | ~81% | ~61% | −20 pp |
+| Nubank CO | ~87% | ~88% | stable |
+| Nequi | ~84% | ~85% | stable |
+| Kipo (self-issued) | ~89% | ~90% | stable |
 
 The drop is concentrated entirely in **Bancolombia and Davivienda** — Colombia's two largest traditional banks. The neobanks are unaffected.
 
 ### Q3 — What decline codes are driving it?
 
-The decline code breakdown shows two codes dominating the new declines:
-- **`05` — Do Not Honor** (~45% of declines): a generic soft decline from the issuer
-- **`57` — Transaction Not Permitted** (~30% of declines): often triggered by 3DS2 friction or missing authentication challenge
+The decline code breakdown shows three codes dominating the new declines:
+- **`05` — Do Not Honor** (~31% of declines): a generic soft decline from the issuer
+- **`57` — Transaction Not Permitted** (~26% of declines): often triggered by 3DS2 friction or missing authentication challenge
+- **`91` — Issuer Unavailable** (~20% of declines): the issuing bank's authorization system failed to respond within the network timeout
 
-Both are soft declines — meaning the bank is not permanently refusing the card, but rejecting this specific transaction. This is a strong signal that the issue is authentication-related, not a cardholder funds problem.
+`05` and `57` are soft declines — the bank is not permanently refusing the card, but rejecting this specific transaction, which is a strong signal that the issue is authentication-related. `91` adds an availability dimension: Bancolombia and Davivienda appear to be struggling with response times under the increased 3DS2 challenge load, generating timeouts that register as this code.
 
 ### Q4 — Soft vs. hard declines by issuer
 
@@ -81,16 +82,16 @@ The pivot table is the clearest finding:
 
 | | e-commerce | POS | in-app |
 |---|---|---|---|
-| Credit | **71%** | 84% | 86% |
-| Debit | 83% | 85% | 87% |
+| Credit | **78%** | 83% | 83% |
+| Debit | 82% | 85% | 80% |
 
-The drop is almost entirely in **e-commerce + credit** combinations. POS and in-app channels, and debit cards across all channels, are unaffected.
+The drop is most concentrated in **e-commerce + credit** combinations — the lowest auth rate in the grid. POS and in-app channels are more stable, though in-app debit (80%) slightly underperforms other debit segments. The e-commerce + credit pattern points squarely at 3DS2: e-commerce is the only channel where interactive challenges are presented to the user.
 
 This is the root cause: Bancolombia and Davivienda tightened their 3DS2 challenge policy on e-commerce credit card transactions starting January 31. Transactions that previously passed a frictionless flow are now being challenged — and a portion of cardholders are abandoning or failing the challenge.
 
 ### Q6 — Can retries recover the soft declines?
 
-The retry success rate shows that roughly **42–48% of soft declines from Bancolombia and Davivienda are recovered on a second attempt** — lower than the ~65% rate from neobanks. This means retrying helps but is not enough on its own.
+The retry success rate shows that roughly **45–47% of soft declines from Bancolombia and Davivienda are recovered on a second attempt** (Bancolombia ~47%, Davivienda ~45%) — lower than neobanks, where recovery rates range from ~48% (Nubank CO) to ~61% (Nequi). This means retrying helps but is not enough on its own.
 
 ### Q7 — Is one acquirer performing better?
 
@@ -110,7 +111,7 @@ The traditional banks are applying this policy. The neobanks have not, which is 
 
 1. **Issuer engagement** — Open a direct line with Bancolombia and Davivienda's issuer relations teams. Request data on how they are applying their 3DS2 challenge policy and whether exemptions (e.g. low-value transaction exemptions under 30 USD) can be negotiated.
 
-2. **Retry logic tuning** — Implement automatic retry for `05` and `57` decline codes with a 10-second delay. With ~45% retry recovery, this alone could recover ~3–4 percentage points of the rate.
+2. **Retry logic tuning** — Implement automatic retry for `05`, `57`, and `91` decline codes with a 10-second delay. With ~46% retry recovery on Bancolombia and Davivienda soft declines, this alone could recover ~3–4 percentage points of the rate. For `91` (issuer unavailable), a second retry after a longer delay (30s) may further improve conversion.
 
 3. **3DS2 exemption strategy** — For low-risk transactions (fraud score < 30, returning cardholder, small amount), request Transaction Risk Analysis (TRA) exemptions from the issuer to avoid triggering the challenge flow.
 
