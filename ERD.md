@@ -1,8 +1,8 @@
 # Esquema de datos — Pagos con tarjeta
 
-> Caso de estudio 01 · Kipo Fintech · Ciclo de vida completo de una transacción con tarjeta débito y crédito (Mastercard · Visa).
-
 El esquema cubre desde la evaluación de riesgo previa a la autorización hasta la liquidación, reembolsos y disputas. Incluye catálogos de emisores, BINs, adquirentes y decline codes para análisis segmentado.
+
+Es una aproximación a una estructura real, creada a partir de los procesos, entidades y métricas que se involucran el flujo de pagos con tarjeta.
 
 ---
 

@@ -1,4 +1,4 @@
-# Kipo — Fintech Hipotética · Portafolio de PM de Pagos
+# Kipo — Fintech
 
 > **"Tu plata, sin rodeos."**  
 > Empresa ficticia creada como marco de trabajo para explorar y compartir cómo funciona realmente la infraestructura de pagos en Colombia: tarjetas, wallets, cash-in/cash-out, QR, BaaS y cumplimiento regulatorio.
@@ -7,7 +7,7 @@
 
 ## ¿Qué es Kipo?
 
-Kipo es una fintech colombiana hipotética inspirada en empresas como Tpaga, Bold, Littio y Nubank. Nació como una super-app financiera dirigida a la Colombia informal — personas sin cuenta bancaria, sin historial crediticio y que operan principalmente en efectivo. A finales de 2025, Kipo abrió su infraestructura de pagos como plataforma de **Banking as a Service (BaaS)**, permitiendo que otras fintechs, marketplaces y empresas de tecnología construyan productos financieros sobre los mismos rieles que Kipo usa internamente.
+Kipo es una fintech colombiana hipotética inspirada en empresas como Tpaga, Bold, y Nubank. Nació como una super-app financiera dirigida a la Colombia informal — personas sin cuenta bancaria, sin historial crediticio y que operan principalmente en efectivo. A finales de 2025, Kipo abrió su infraestructura de pagos como plataforma de **Banking as a Service (BaaS)**, permitiendo que otras fintechs, marketplaces y empresas de tecnología construyan productos financieros sobre los mismos rieles que Kipo usa internamente.
 
 Este repositorio contiene casos de estudio, análisis técnicos y documentación de producto que usan a Kipo como contexto para explorar y compartir cómo funciona el ecosistema de pagos en Colombia y Latam.
 
@@ -87,16 +87,18 @@ Cumplimiento            SARLAFT · LAFT · reporte a UIAF
 
 > Los casos exploran cómo funciona la infraestructura técnica de pagos en Colombia — flujos reales, decisiones de arquitectura y lógica de negocio detrás de cada método de pago.
 
-| # | Caso | Conceptos clave |
-|---|---|---|
-| 01 | Flujo completo de pago con tarjeta débito y crédito (Mastercard · Visa) | Autorización, captura, liquidación, interchange, contracargos |
-| 02 | Cash-in vía corresponsal y acreditación en wallet | Protocolo corresponsal, conciliación, prevención de fraude en efectivo |
-| 03 | Pagos QR interoperables con Transfiya | Generación de QR, instrucción de pago, tiempo de respuesta, fallback |
-| 04 | Transferencias ACH en tiempo real | Ventanas de compensación, manejo de errores, devoluciones |
-| 05 | Emisión de tarjeta white-label (BaaS) | API de emisión, controles de tarjeta, tokenización, gestión del ciclo de vida |
-| 06 | Motor antifraude y scoring de transacciones | Señales de riesgo, reglas configurables, tasas de falsos positivos, 3DS2 |
-| 07 | Conciliación automática y liquidación | Cuadre entre transacciones autorizadas, capturadas y fondos recibidos |
-| 08 | Onboarding KYC y cumplimiento SARLAFT | Flujo biométrico, listas restrictivas, monitoreo transaccional UIAF |
+| # | Caso | Conceptos clave | Status | Link |
+|---|---|---|---|---|
+| 01 | Flujo completo de pago con tarjeta débito y crédito (Mastercard · Visa) | Autorización, captura, liquidación, interchange, contracargos | Publicado | Ver |
+| 02 | Cash-in vía corresponsal y acreditación en wallet | Protocolo corresponsal, conciliación, prevención de fraude en efectivo | En proceso |   |
+| 03 | Pagos QR interoperables con Transfiya | Generación de QR, instrucción de pago, tiempo de respuesta, fallback | Backlog |   |
+| 04 | Transferencias ACH en tiempo real | Ventanas de compensación, manejo de errores, devoluciones | Backlog |   |
+| 05 | Emisión de tarjeta white-label (BaaS) | API de emisión, controles de tarjeta, tokenización, gestión del ciclo de vida | Backlog |   |
+| 06 | Motor antifraude y scoring de transacciones | Señales de riesgo, reglas configurables, tasas de falsos positivos, 3DS2 | Backlog |   |
+| 07 | Conciliación automática y liquidación | Cuadre entre transacciones autorizadas, capturadas y fondos recibidos | Backlog |   |
+| 08 | Onboarding KYC y cumplimiento SARLAFT | Flujo biométrico, listas restrictivas, monitoreo transaccional UIAF | Backlog |   |
+
+### ZAPIER COMO REFERENCIA DE COMO VOLVIERON UNA API PARA VIBECODER 
 
 ---
 
@@ -106,10 +108,9 @@ Kipo es una empresa ficticia construida tomando como referencia el funcionamient
 
 - **Tpaga** — modelo B2C → BaaS, licencia Sedpe, corresponsales en Colombia
 - **Bold** — infraestructura de pagos para comercios, adquirencia
-- **Littio** — cuenta en dólares, perfil sub-bancarizado con aspiraciones globales
-- **Nubank** — experiencia de usuario, onboarding digital, modelo de crédito
 - **Yuno** — orquestación de pagos, múltiples adquirentes, smart routing
 
+> Kipo pone en plactica todo el conocimiento de Payments de Zaira Zatarain recopilado en su [Roadmap para PM de Payments](https://zzatarain.gumroad.com/l/roadmap-pagos?layout=profile)
 ---
 
 ## Sobre este repositorio
@@ -117,8 +118,3 @@ Kipo es una empresa ficticia construida tomando como referencia el funcionamient
 Kipo es una empresa ficticia construida para tener un contexto concreto desde donde explorar y compartir cómo funcionan los pagos en Colombia y Latam. Todo el contenido (empresa, métricas, clientes) es ficticio y tiene fines educativos.
 
 Los casos de estudio aterrizan conceptos reales del ecosistema: regulación SFC/UIAF, redes ACH y Transfiya, emisión Mastercard y Visa, flujos de autorización y liquidación, y arquitecturas BaaS — usando a Kipo como hilo conductor.
-
----
-
-*Construido sobre los materiales del [Roadmap para PM de Payments de Zaira Zatarain](https://zzatarain.gumroad.com/l/roadmap-pagos?layout=profile) y el ecosistema real de pagos colombiano.*
-
