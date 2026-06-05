@@ -1,13 +1,13 @@
 id,issuer_id,bin_prefix,bin_length,card_type,card_brand,card_level,is_active,created_at
-6452431c-0c15-476a-9e42-ce79b4290238,ef6c7469-1579-4597-ad0f-62e214a863a3,453987,6,debit,Visa,classic,True,2024-07-24 00:00:00 UTC
-6bf58f3a-e6f2-48c2-8639-fabfb0442049,ef6c7469-1579-4597-ad0f-62e214a863a3,535800,6,credit,Mastercard,gold,True,2024-08-12 00:00:00 UTC
-1004cfff-d4f0-4227-b5b6-780ab6936525,498489cb-6091-47bf-81c0-a3456778488e,446200,6,debit,Visa,classic,True,2024-08-20 00:00:00 UTC
-c0eae11e-a6f4-4fdc-834d-9abbdffb20da,498489cb-6091-47bf-81c0-a3456778488e,512300,6,credit,Mastercard,classic,True,2024-03-01 00:00:00 UTC
-3ebf5aad-e8bd-4584-a0a5-71f2c5933e91,129c5622-9d58-4d60-94fb-ac085fcfe1e4,535902,6,debit,Mastercard,classic,True,2024-09-17 00:00:00 UTC
-2ad96cef-2a1e-4fb4-89be-8e6707f9f086,129c5622-9d58-4d60-94fb-ac085fcfe1e4,546150,6,credit,Mastercard,platinum,True,2024-09-18 00:00:00 UTC
-05db0869-f9cc-4786-bade-5366f9019ca7,d1e5283d-14e2-4bf7-85ab-dea5e2adcb46,453612,6,debit,Visa,classic,True,2024-08-17 00:00:00 UTC
-74c41822-2e65-4697-98ca-04d4c93bf97e,d1e5283d-14e2-4bf7-85ab-dea5e2adcb46,411000,6,credit,Visa,classic,True,2024-06-14 00:00:00 UTC
-cbd82fab-ba6f-496d-985c-4373f30eef77,6869a0dc-d1f1-4163-beae-677b0b686721,542300,6,debit,Mastercard,classic,True,2024-06-06 00:00:00 UTC
-deacb25a-ef0e-4285-896a-b74fa10b7aa2,6869a0dc-d1f1-4163-beae-677b0b686721,543100,6,credit,Mastercard,gold,True,2024-01-19 00:00:00 UTC
-b69fcf78-47af-497e-9257-a29700ca1cb5,6869a0dc-d1f1-4163-beae-677b0b686721,453200,6,debit,Visa,classic,True,2024-09-20 00:00:00 UTC
-f6d9f62d-277c-4e85-9492-6e1b3169c8b2,6869a0dc-d1f1-4163-beae-677b0b686721,454700,6,credit,Visa,classic,True,2024-06-24 00:00:00 UTC
+224f1aae-06ac-4ad3-bab7-41290ff9ef86,231e502e-36fa-4d74-8534-e4541a8e6b51,453987,6,debit,Visa,classic,true,2024-07-24 00:00:00 UTC
+f961052d-d0ba-4a52-b6a6-f64182413756,231e502e-36fa-4d74-8534-e4541a8e6b51,535800,6,credit,Mastercard,gold,true,2024-08-12 00:00:00 UTC
+67015b16-640d-4139-99bc-ad6ffd31cb28,f7ec6a80-410a-4b8b-b058-fd649e275ca1,446200,6,debit,Visa,classic,true,2024-08-20 00:00:00 UTC
+dcbeff22-0199-4a1e-be90-a2adf2ee7111,f7ec6a80-410a-4b8b-b058-fd649e275ca1,512300,6,credit,Mastercard,classic,true,2024-03-01 00:00:00 UTC
+e4d5e84d-1b97-43f6-a0ee-73ab235c8bc9,e8bc3ef1-07f6-4f4a-9e23-3210d87d8853,535902,6,debit,Mastercard,classic,true,2024-09-17 00:00:00 UTC
+6a904656-4edd-47c9-a506-43c4edf25ded,e8bc3ef1-07f6-4f4a-9e23-3210d87d8853,546150,6,credit,Mastercard,platinum,true,2024-09-18 00:00:00 UTC
+b2f7d73b-4481-4261-bbe1-1cce0c89d405,29ee8a7a-4bed-487c-a8f2-258e6e84dfad,453612,6,debit,Visa,classic,true,2024-08-17 00:00:00 UTC
+7febfb19-af47-4d50-aa81-9df88983c03d,29ee8a7a-4bed-487c-a8f2-258e6e84dfad,411000,6,credit,Visa,classic,true,2024-06-14 00:00:00 UTC
+bad6f9af-46d9-46f7-b29a-7c49776b4372,55e8fb11-6682-4f5f-abe5-0cbdd6490bd5,542300,6,debit,Mastercard,classic,true,2024-06-06 00:00:00 UTC
+5c98f4bf-a6fa-4b46-93fd-c355c03734e1,55e8fb11-6682-4f5f-abe5-0cbdd6490bd5,543100,6,credit,Mastercard,gold,true,2024-01-19 00:00:00 UTC
+c16f0a5c-f752-4672-b1bd-ba4009eaf81e,55e8fb11-6682-4f5f-abe5-0cbdd6490bd5,453200,6,debit,Visa,classic,true,2024-09-20 00:00:00 UTC
+35abb67e-0b00-425b-9738-81938b826b28,55e8fb11-6682-4f5f-abe5-0cbdd6490bd5,454700,6,credit,Visa,classic,true,2024-06-24 00:00:00 UTC

@@ -73,7 +73,11 @@ def write_csv(filename: str, rows: list[dict]):
     with open(path, "w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=rows[0].keys())
         writer.writeheader()
-        writer.writerows(rows)
+        normalized = [
+            {k: str(v).lower() if isinstance(v, bool) else v for k, v in row.items()}
+            for row in rows
+        ]
+        writer.writerows(normalized)
     print(f"  {filename}: {len(rows)} rows")
 
 # ── 1. Issuers ─────────────────────────────────────────────────────────────────
