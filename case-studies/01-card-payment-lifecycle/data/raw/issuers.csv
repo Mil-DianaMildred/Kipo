@@ -1,6 +1,6 @@
-id,name,short_name,country,network,issuer_type,avg_auth_rate,avg_soft_decline_rate,created_at
-231e502e-36fa-4d74-8534-e4541a8e6b51,Bancolombia,BCOL,CO,Mastercard,bank,0.77,0.184,2024-03-13 00:00:00 UTC
-f7ec6a80-410a-4b8b-b058-fd649e275ca1,Davivienda,DAVI,CO,Visa,bank,0.76,0.192,2024-06-10 00:00:00 UTC
-e8bc3ef1-07f6-4f4a-9e23-3210d87d8853,Nubank CO,NUBK,CO,Mastercard,neobank,0.88,0.096,2023-09-28 00:00:00 UTC
-29ee8a7a-4bed-487c-a8f2-258e6e84dfad,Nequi,NEQI,CO,Visa,neobank,0.87,0.104,2023-10-29 00:00:00 UTC
-55e8fb11-6682-4f5f-abe5-0cbdd6490bd5,Kipo,KIPO,CO,Mastercard,fintech,0.9,0.08,2023-11-20 00:00:00 UTC
+"id","name","short_name","country","network","issuer_type","avg_auth_rate","avg_soft_decline_rate","created_at"
+"4704b7b1-c4aa-4725-9846-a27d1998c5ad","Bancolombia","BCOL","CO","Mastercard","bank",0.805,0.156,"2024-03-13 00:00:00 UTC"
+"1eda4d93-6130-4fff-be6e-4c3900ece0c3","Davivienda","DAVI","CO","Visa","bank",0.79,0.168,"2024-06-10 00:00:00 UTC"
+"7e066050-9d40-4120-b016-98a97553812e","Nubank CO","NUBK","CO","Mastercard","neobank",0.88,0.096,"2023-09-28 00:00:00 UTC"
+"69a9e6a7-7969-4bac-822d-5780b4a9b1ac","Nequi","NEQI","CO","Visa","neobank",0.87,0.104,"2023-10-29 00:00:00 UTC"
+"47033d86-a747-4ec1-bf5a-985a8c732bb4","Kipo","KIPO","CO","Mastercard","fintech",0.9,0.08,"2023-11-20 00:00:00 UTC"

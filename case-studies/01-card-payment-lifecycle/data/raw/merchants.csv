@@ -1,6 +1,6 @@
-id,name,legal_name,mcc,mcc_description,country,city,channel,status,onboarded_at
-fbab89bf-be55-42eb-b4e6-8b3789d6096f,Éxito,Éxito S.A.S.,5411,Grocery Stores,CO,Medellín,pos,active,2024-07-04 00:00:00 UTC
-8d30befb-4ee0-4cc9-ad9a-3c9b204d2ad9,Rappi CO,Rappi CO S.A.S.,5812,Eating Places,CO,Bogotá,ecommerce,active,2024-03-03 00:00:00 UTC
-2182252a-8a60-4e4b-a45e-5a4a3bebb47f,Falabella CO,Falabella CO S.A.S.,5651,Retail Clothing Stores,CO,Medellín,ecommerce,active,2024-04-22 00:00:00 UTC
-551f5dbb-5ee6-4b89-997e-0320cacda842,InDriver CO,InDriver CO S.A.S.,4121,Taxicabs and Limousines,CO,Medellín,in_app,active,2024-03-04 00:00:00 UTC
-6a7eddf3-078b-4ff7-9d61-9a7886336f7b,Netflix CO,Netflix CO S.A.S.,7922,Digital Entertainment,CO,Cali,ecommerce,active,2024-05-18 00:00:00 UTC
+"id","name","legal_name","mcc","mcc_description","country","city","channel","status","onboarded_at"
+"a262f4e8-8f35-4d2f-80ac-2587c81efe06","Éxito","Éxito S.A.S.","5411","Grocery Stores","CO","Medellín","pos","active","2024-07-04 00:00:00 UTC"
+"ce99fd6d-6a81-41cb-8059-9334981a2abf","Rappi CO","Rappi CO S.A.S.","5812","Eating Places","CO","Bogotá","ecommerce","active","2024-03-03 00:00:00 UTC"
+"86a8ac5e-db79-4ccb-8aa2-15ac595b9341","Falabella CO","Falabella CO S.A.S.","5651","Retail Clothing Stores","CO","Medellín","ecommerce","active","2024-04-22 00:00:00 UTC"
+"a4701cf1-e40b-4052-a946-1553204acf3e","InDriver CO","InDriver CO S.A.S.","4121","Taxicabs and Limousines","CO","Medellín","in_app","active","2024-03-04 00:00:00 UTC"
+"052bc336-e5c2-47fe-952a-811c9f7f818d","Netflix CO","Netflix CO S.A.S.","7922","Digital Entertainment","CO","Cali","ecommerce","active","2024-05-18 00:00:00 UTC"

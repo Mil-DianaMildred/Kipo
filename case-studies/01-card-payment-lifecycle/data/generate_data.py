@@ -26,34 +26,66 @@ os.makedirs(RAW_DIR, exist_ok=True)
 # ── Simulation parameters ──────────────────────────────────────────────────────
 START_DATE = datetime(2025, 1, 1, tzinfo=timezone.utc)
 TOTAL_DAYS = 60
-DROP_DAY = 30          # auth rate drops after this day
 N_PAYMENT_INTENTS = 10_000
 
-# Auth rates by phase and issuer (phase 0 = days 1–30, phase 1 = days 31–60)
-ISSUER_AUTH_RATES = {
-    "Bancolombia":  [0.84, 0.70],   # drops in phase 1
-    "Davivienda":   [0.83, 0.69],   # drops in phase 1
-    "Nubank CO":    [0.88, 0.88],   # stable
-    "Nequi":        [0.87, 0.87],   # stable
-    "Kipo":         [0.90, 0.90],   # stable
+# Auth-rate ramp per issuer.
+#   p1            : baseline auth rate before the policy change
+#   p2_trough     : auth rate after the policy fully takes effect
+#   ramp_start_day: day-offset (0-indexed) when the degradation begins
+#   ramp_days     : number of days to ramp from p1 to p2_trough
+#
+# Bancolombia and Davivienda are staggered by 2 days to look like two issuers
+# reacting to the same external trigger on slightly different timelines, and
+# the drop is spread over ~4 days instead of a clean step. Magnitudes are
+# tuned for ~8–11 pp per bank (crisis-level but plausible for a policy
+# tightening on card-not-present credit traffic), not the 18–20 pp jumps that
+# would only land if a fraud ring forced an emergency lockdown.
+ISSUER_RAMP = {
+    "Bancolombia": {"p1": 0.85, "p2_trough": 0.76, "ramp_start_day": 29, "ramp_days": 4},
+    "Davivienda":  {"p1": 0.84, "p2_trough": 0.74, "ramp_start_day": 31, "ramp_days": 4},
+    "Nubank CO":   {"p1": 0.88, "p2_trough": 0.88, "ramp_start_day": 0,  "ramp_days": 1},
+    "Nequi":       {"p1": 0.87, "p2_trough": 0.87, "ramp_start_day": 0,  "ramp_days": 1},
+    "Kipo":        {"p1": 0.90, "p2_trough": 0.90, "ramp_start_day": 0,  "ramp_days": 1},
 }
 
-# Decline codes (code, description, decline_type, recommended_action, source)
+# Extra decline pressure on the credit + e-commerce surface for the two
+# affected issuers during the drop window. 0.82 means "shave another ~18% off
+# the day's base rate" for that cohort — keeps credit×e-commerce visibly the
+# worst cell in the card-type × channel matrix without flipping it into an
+# outlier the analyst trips over.
+CREDIT_ECOM_PRESSURE = 0.82
+
+# Decline codes (code, description, decline_type, recommended_action, source).
+# 05/57 are HARD per ISO 8583 / Mastercard / Visa standards. 96 must wait
+# 30–60s before retry, not retry immediately. 61 is added as a realistic
+# secondary hard code seen when issuers tighten per-card limits.
 DECLINE_CODES = [
-    ("00", "Approved",                        "approved",      "none",                                  "Mastercard/Visa"),
-    ("05", "Do Not Honor",                    "soft",          "Retry once after short delay",           "Mastercard/Visa"),
-    ("51", "Insufficient Funds",              "soft",          "Advise cardholder to add funds",         "Mastercard/Visa"),
-    ("14", "Invalid Card Number",             "hard",          "Request new card from cardholder",       "Mastercard/Visa"),
-    ("54", "Expired Card",                    "hard",          "Request updated card information",       "Mastercard/Visa"),
-    ("57", "Transaction Not Permitted",       "soft",          "Retry with 3DS2 or alternative method",  "Mastercard/Visa"),
-    ("91", "Card Issuer Unavailable",         "soft",          "Retry after 30 minutes",                 "Mastercard/Visa"),
-    ("96", "System Error",                    "soft",          "Retry immediately",                      "Mastercard/Visa"),
-    ("41", "Lost Card",                       "hard",          "Do not retry",                           "Mastercard/Visa"),
-    ("43", "Stolen Card",                     "hard",          "Do not retry",                           "Mastercard/Visa"),
+    ("00", "Approved",                        "approved", "none",                                                    "Mastercard/Visa"),
+    ("05", "Do Not Honor",                    "hard",     "Contact issuing bank; do not retry",                      "Mastercard/Visa"),
+    ("51", "Insufficient Funds",              "soft",     "Advise cardholder to add funds",                          "Mastercard/Visa"),
+    ("14", "Invalid Card Number",             "hard",     "Request new card from cardholder",                        "Mastercard/Visa"),
+    ("54", "Expired Card",                    "hard",     "Request updated card information",                        "Mastercard/Visa"),
+    ("57", "Transaction Not Permitted",       "hard",     "Cardholder must call bank to enable transaction type",    "Mastercard/Visa"),
+    ("61", "Exceeds Withdrawal Limit",        "hard",     "Cardholder must request a limit increase from the issuer","Mastercard/Visa"),
+    ("91", "Card Issuer Unavailable",         "soft",     "Retry after 30 minutes",                                  "Mastercard/Visa"),
+    ("96", "System Error",                    "soft",     "Retry after 30–60 seconds",                               "Mastercard/Visa"),
+    ("41", "Lost Card",                       "hard",     "Do not retry",                                            "Mastercard/Visa"),
+    ("43", "Stolen Card",                     "hard",     "Do not retry",                                            "Mastercard/Visa"),
 ]
 
-# Soft decline codes that drive the drop (weighted toward phase 1, e-commerce, credit)
-DROP_DECLINE_CODES = ["05", "57", "91"]
+# Decline-code mix inside the affected cohort (Bancolombia/Davivienda credit
+# e-commerce during the drop window). Heavy on 05 (catch-all risk refusal),
+# 91 (issuer endpoint slow under the new rule), with a smaller share of 51
+# (month-end insufficient funds), 96 (system error), 57 (transaction-type
+# restriction), and 61 (per-card limit tightening).
+DROP_DECLINE_WEIGHTS = [
+    ("05", 50),
+    ("91", 25),
+    ("51", 10),
+    ("96",  8),
+    ("57",  4),
+    ("61",  3),
+]
 
 # ── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -66,15 +98,50 @@ def ts(dt: datetime) -> str:
 def rand_date(start: datetime, days: int) -> datetime:
     return start + timedelta(seconds=random.randint(0, days * 86400))
 
+def daily_auth_rate(issuer_name: str, day_offset: int) -> float:
+    """Linear ramp from p1 to p2_trough between ramp_start_day and
+    ramp_start_day + ramp_days. Stable on both sides of the window."""
+    cfg = ISSUER_RAMP[issuer_name]
+    start, span = cfg["ramp_start_day"], cfg["ramp_days"]
+    if day_offset < start:
+        return cfg["p1"]
+    if day_offset >= start + span:
+        return cfg["p2_trough"]
+    t = (day_offset - start) / span
+    return cfg["p1"] + (cfg["p2_trough"] - cfg["p1"]) * t
+
+
+def in_drop_window(issuer_name: str, day_offset: int) -> bool:
+    """True once the issuer has at least started ramping down — used to
+    bias the decline-code mix toward the drop-window distribution."""
+    cfg = ISSUER_RAMP[issuer_name]
+    return cfg["p2_trough"] < cfg["p1"] and day_offset >= cfg["ramp_start_day"]
+
+
+def pick_drop_decline_code() -> str:
+    codes, weights = zip(*DROP_DECLINE_WEIGHTS)
+    return random.choices(codes, weights=weights, k=1)[0]
+
+
 def write_csv(filename: str, rows: list[dict]):
+    """Write CSV with QUOTE_NONNUMERIC so every string is wrapped in double
+    quotes. This is the defensive option for BigQuery LOAD: it guarantees
+    leading-zero codes like ``05``/``00`` survive as strings and prevents any
+    downstream tool (Excel, autodetection, etc.) from re-typing them as
+    integers."""
     if not rows:
         return
     path = os.path.join(RAW_DIR, filename)
     with open(path, "w", newline="", encoding="utf-8") as f:
-        writer = csv.DictWriter(f, fieldnames=rows[0].keys())
+        writer = csv.DictWriter(
+            f,
+            fieldnames=rows[0].keys(),
+            quoting=csv.QUOTE_NONNUMERIC,
+        )
         writer.writeheader()
         normalized = [
-            {k: str(v).lower() if isinstance(v, bool) else v for k, v in row.items()}
+            {k: ("true" if v is True else "false" if v is False else v)
+             for k, v in row.items()}
             for row in rows
         ]
         writer.writerows(normalized)
@@ -92,6 +159,8 @@ ISSUER_DATA = [
 issuers = []
 issuer_ids = {}
 for d in ISSUER_DATA:
+    cfg = ISSUER_RAMP[d["name"]]
+    avg_rate = round((cfg["p1"] + cfg["p2_trough"]) / 2, 4)
     i = {
         "id":                    uid(),
         "name":                  d["name"],
@@ -99,8 +168,8 @@ for d in ISSUER_DATA:
         "country":               "CO",
         "network":               d["network"],
         "issuer_type":           d["issuer_type"],
-        "avg_auth_rate":         round(sum(ISSUER_AUTH_RATES[d["name"]]) / 2, 4),
-        "avg_soft_decline_rate": round((1 - sum(ISSUER_AUTH_RATES[d["name"]]) / 2) * 0.80, 4),
+        "avg_auth_rate":         avg_rate,
+        "avg_soft_decline_rate": round((1 - avg_rate) * 0.80, 4),
         "created_at":            ts(START_DATE - timedelta(days=random.randint(180, 730))),
     }
     issuers.append(i)
@@ -140,7 +209,7 @@ cards = []
 card_records = []  # (card_id, issuer_name, card_type, card_brand)
 
 for _ in range(500):
-    issuer_name = random.choice(list(ISSUER_AUTH_RATES.keys()))
+    issuer_name = random.choice(list(ISSUER_RAMP.keys()))
     card_type = random.choice(["debit", "credit"])
     key = (issuer_name, card_type)
     if key not in bin_range_ids:
@@ -260,12 +329,11 @@ for acq_id in acquirer_ids:
         settlement_batches_map[(acq_id, str(batch_date))] = batch
 
 for _ in range(N_PAYMENT_INTENTS):
-    # Pick a random day and determine phase
+    # Pick a random day. Phase / ramp position is resolved per-issuer below.
     day_offset = random.randint(0, TOTAL_DAYS - 1)
     created_at = START_DATE + timedelta(
         seconds=day_offset * 86400 + random.randint(0, 86399)
     )
-    phase = 1 if day_offset >= DROP_DAY else 0
 
     # Pick a card (active preferred)
     card_id, user_id, issuer_name, card_type, card_brand = random.choice(card_records)
@@ -320,13 +388,24 @@ for _ in range(N_PAYMENT_INTENTS):
         payment_intents.append(pi)
         continue
 
-    # Authorization attempt
+    # Authorization attempt — auth rate is resolved per-day, per-issuer along
+    # the ramp curve, so the drop is visible as a 3–5 day ramp rather than a
+    # clean step on day 30.
     acq_id = random.choice(acquirer_ids)
-    auth_rate = ISSUER_AUTH_RATES[issuer_name][phase]
+    auth_rate = daily_auth_rate(issuer_name, day_offset)
 
-    # Extra decline pressure: e-commerce + credit in phase 1 for Bancolombia/Davivienda
-    if phase == 1 and channel == "ecommerce" and card_type == "credit" and issuer_name in ("Bancolombia", "Davivienda"):
-        auth_rate *= 0.78  # additional ~22% decline pressure
+    # Extra decline pressure on credit + e-commerce for the two affected
+    # issuers once their ramp has started — keeps that cell the worst in the
+    # card-type × channel matrix without making it an outlier.
+    in_drop = in_drop_window(issuer_name, day_offset)
+    affected_cohort = (
+        in_drop
+        and channel == "ecommerce"
+        and card_type == "credit"
+        and issuer_name in ("Bancolombia", "Davivienda")
+    )
+    if affected_cohort:
+        auth_rate *= CREDIT_ECOM_PRESSURE
 
     approved = random.random() < auth_rate
     attempt_at = created_at + timedelta(milliseconds=random.randint(300, 800))
@@ -336,9 +415,11 @@ for _ in range(N_PAYMENT_INTENTS):
         decline_type_val = ""
         response_code = "00"
     else:
-        # Soft declines dominate the drop period for the affected issuers
-        if phase == 1 and issuer_name in ("Bancolombia", "Davivienda") and channel == "ecommerce":
-            dc_code = random.choices(DROP_DECLINE_CODES, weights=[50, 35, 15])[0]
+        # In the affected cohort, draw the decline code from the drop-window
+        # mix (heavy on 05, then 91, with smaller shares of 51/96/57/61).
+        # Elsewhere, fall back to a broad realistic mix.
+        if affected_cohort:
+            dc_code = pick_drop_decline_code()
         else:
             soft_codes = [c for c in DECLINE_CODES if c[2] == "soft" and c[0] != "00"]
             hard_codes = [c for c in DECLINE_CODES if c[2] == "hard"]
@@ -375,7 +456,7 @@ for _ in range(N_PAYMENT_INTENTS):
             r_rc = "00"
             approved = True
         else:
-            r_dc = random.choice(DROP_DECLINE_CODES)
+            r_dc = pick_drop_decline_code()
             r_dc_entry = next(d for d in DECLINE_CODES if d[0] == r_dc)
             r_dt = r_dc_entry[2]
             r_rc = r_dc

@@ -1,4 +1,24 @@
-LOAD DATA OVERWRITE `kipo-case01.kipo_cardpayments.issuer`
+ -- ESTE FUNCIONO DIRECTAMENTE, TIENE LA ESTRUCTURA DE DATA CORRECTA
+ -- ============================================================
+-- Case Study 01 · Kipo Fintech · Card Payment Lifecycle
+-- Load CSV data from Google Cloud Storage into BigQuery
+-- ============================================================
+--
+-- Prerequisitos:
+--   1. Las tablas ya existen (01_ddl.sql ejecutado).
+--   2. Las tablas están vacías (TRUNCATE ejecutado).
+--   3. Los CSVs están en el bucket:
+--        gs://kipo-case01-raw-data/kipo/raw/
+--
+-- Opciones de parsing aplicadas a todas las tablas:
+--   · null_marker = ''         → campos vacíos se leen como NULL
+--
+-- Orden de carga: catálogos primero, luego transaccionales.
+-- ============================================================
+
+-- ── 1. issuer ────────────────────────────────────────────────
+
+LOAD DATA INTO `kipo-case01.kipo_cardpayments.issuer`
   (id STRING,
    name STRING,
    short_name STRING,
@@ -9,12 +29,16 @@ LOAD DATA OVERWRITE `kipo-case01.kipo_cardpayments.issuer`
    avg_soft_decline_rate NUMERIC,
    created_at TIMESTAMP)
 FROM FILES (
-  format = 'CSV',
-  skip_leading_rows = 1,
-  uris = ['gs://kipo-case01-raw-data/kipo/raw/issuers.csv']
+  format             = 'CSV',
+  skip_leading_rows  = 1,
+  null_marker        = '',
+  uris               = ['gs://kipo-case01-raw-data/kipo/raw/issuers.csv']
 );
 
-LOAD DATA OVERWRITE `kipo-case01.kipo_cardpayments.bin_range`
+
+-- ── 2. bin_range ─────────────────────────────────────────────
+
+LOAD DATA INTO `kipo-case01.kipo_cardpayments.bin_range`
   (id STRING,
    issuer_id STRING,
    bin_prefix STRING,
@@ -25,12 +49,16 @@ LOAD DATA OVERWRITE `kipo-case01.kipo_cardpayments.bin_range`
    is_active BOOL,
    created_at TIMESTAMP)
 FROM FILES (
-  format = 'CSV',
-  skip_leading_rows = 1,
-  uris = ['gs://kipo-case01-raw-data/kipo/raw/bin_ranges.csv']
+  format             = 'CSV',
+  skip_leading_rows  = 1,
+  null_marker        = '',
+  uris               = ['gs://kipo-case01-raw-data/kipo/raw/bin_ranges.csv']
 );
 
-LOAD DATA OVERWRITE `kipo-case01.kipo_cardpayments.card`
+
+-- ── 3. card ──────────────────────────────────────────────────
+
+LOAD DATA INTO `kipo-case01.kipo_cardpayments.card`
   (id STRING,
    user_id STRING,
    bin_range_id STRING,
@@ -41,12 +69,16 @@ LOAD DATA OVERWRITE `kipo-case01.kipo_cardpayments.card`
    created_at TIMESTAMP,
    expires_at TIMESTAMP)
 FROM FILES (
-  format = 'CSV',
-  skip_leading_rows = 1,
-  uris = ['gs://kipo-case01-raw-data/kipo/raw/cards.csv']
+  format             = 'CSV',
+  skip_leading_rows  = 1,
+  null_marker        = '',
+  uris               = ['gs://kipo-case01-raw-data/kipo/raw/cards.csv']
 );
 
-LOAD DATA OVERWRITE `kipo-case01.kipo_cardpayments.merchant`
+
+-- ── 4. merchant ──────────────────────────────────────────────
+
+LOAD DATA INTO `kipo-case01.kipo_cardpayments.merchant`
   (id STRING,
    name STRING,
    legal_name STRING,
@@ -58,12 +90,16 @@ LOAD DATA OVERWRITE `kipo-case01.kipo_cardpayments.merchant`
    status STRING,
    onboarded_at TIMESTAMP)
 FROM FILES (
-  format = 'CSV',
-  skip_leading_rows = 1,
-  uris = ['gs://kipo-case01-raw-data/kipo/raw/merchants.csv']
+  format             = 'CSV',
+  skip_leading_rows  = 1,
+  null_marker        = '',
+  uris               = ['gs://kipo-case01-raw-data/kipo/raw/merchants.csv']
 );
 
-LOAD DATA OVERWRITE `kipo-case01.kipo_cardpayments.acquirer`
+
+-- ── 5. acquirer ──────────────────────────────────────────────
+
+LOAD DATA INTO `kipo-case01.kipo_cardpayments.acquirer`
   (id STRING,
    name STRING,
    processor_name STRING,
@@ -72,22 +108,31 @@ LOAD DATA OVERWRITE `kipo-case01.kipo_cardpayments.acquirer`
    historical_auth_rate NUMERIC,
    status STRING)
 FROM FILES (
-  format = 'CSV',
-  skip_leading_rows = 1,
-  uris = ['gs://kipo-case01-raw-data/kipo/raw/acquirers.csv']
+  format             = 'CSV',
+  skip_leading_rows  = 1,
+  null_marker        = '',
+  uris               = ['gs://kipo-case01-raw-data/kipo/raw/acquirers.csv']
 );
 
-LOAD DATA OVERWRITE `kipo-case01.kipo_cardpayments.decline_code_catalog`
+
+-- ── 6. decline_code_catalog ──────────────────────────────────
+
+LOAD DATA INTO `kipo-case01.kipo_cardpayments.decline_code_catalog`
   (code STRING,
    description STRING,
    decline_type STRING,
    recommended_action STRING,
    source STRING)
 FROM FILES (
-  format = 'CSV',
-  skip_leading_rows = 1,
-  uris = ['gs://kipo-case01-raw-data/kipo/raw/decline_code_catalog.csv']
+  format             = 'CSV',
+  skip_leading_rows  = 1,
+  null_marker        = '',
+  uris               = ['gs://kipo-case01-raw-data/kipo/raw/decline_code_catalog.csv']
 );
+
+
+-- ── 7. payment_intent ────────────────────────────────────────
+-- Partitioned by DATE(created_at).
 
 LOAD DATA INTO `kipo-case01.kipo_cardpayments.payment_intent`
   (id STRING,
@@ -105,12 +150,16 @@ LOAD DATA INTO `kipo-case01.kipo_cardpayments.payment_intent`
    status STRING,
    created_at TIMESTAMP)
 FROM FILES (
-  format = 'CSV',
-  skip_leading_rows = 1,
-  uris = ['gs://kipo-case01-raw-data/kipo/raw/payment_intents.csv']
+  format             = 'CSV',
+  skip_leading_rows  = 1,
+  null_marker        = '',
+  uris               = ['gs://kipo-case01-raw-data/kipo/raw/payment_intents.csv']
 );
 
-LOAD DATA OVERWRITE `kipo-case01.kipo_cardpayments.risk_evaluation`
+
+-- ── 8. risk_evaluation ───────────────────────────────────────
+
+LOAD DATA INTO `kipo-case01.kipo_cardpayments.risk_evaluation`
   (id STRING,
    payment_intent_id STRING,
    fraud_score INT64,
@@ -124,12 +173,17 @@ LOAD DATA OVERWRITE `kipo-case01.kipo_cardpayments.risk_evaluation`
    blacklist_hit BOOL,
    evaluated_at TIMESTAMP)
 FROM FILES (
-  format = 'CSV',
-  skip_leading_rows = 1,
-  uris = ['gs://kipo-case01-raw-data/kipo/raw/risk_evaluations.csv']
+  format             = 'CSV',
+  skip_leading_rows  = 1,
+  null_marker        = '',
+  uris               = ['gs://kipo-case01-raw-data/kipo/raw/risk_evaluations.csv']
 );
 
-LOAD DATA OVERWRITE `kipo-case01.kipo_cardpayments.auth_attempt`
+
+-- ── 9. auth_attempt ──────────────────────────────────────────
+-- Clustered by payment_intent_id.
+
+LOAD DATA INTO `kipo-case01.kipo_cardpayments.auth_attempt`
   (id STRING,
    payment_intent_id STRING,
    acquirer_id STRING,
@@ -141,12 +195,16 @@ LOAD DATA OVERWRITE `kipo-case01.kipo_cardpayments.auth_attempt`
    retried BOOL,
    attempted_at TIMESTAMP)
 FROM FILES (
-  format = 'CSV',
-  skip_leading_rows = 1,
-  uris = ['gs://kipo-case01-raw-data/kipo/raw/auth_attempts.csv']
+  format             = 'CSV',
+  skip_leading_rows  = 1,
+  null_marker        = '',
+  uris               = ['gs://kipo-case01-raw-data/kipo/raw/auth_attempts.csv']
 );
 
-LOAD DATA OVERWRITE `kipo-case01.kipo_cardpayments.authorization`
+
+-- ── 10. authorization ────────────────────────────────────────
+
+LOAD DATA INTO `kipo-case01.kipo_cardpayments.authorization`
   (id STRING,
    payment_intent_id STRING,
    acquirer_id STRING,
@@ -162,12 +220,17 @@ LOAD DATA OVERWRITE `kipo-case01.kipo_cardpayments.authorization`
    authorized_at TIMESTAMP,
    expires_at TIMESTAMP)
 FROM FILES (
-  format = 'CSV',
-  skip_leading_rows = 1,
-  uris = ['gs://kipo-case01-raw-data/kipo/raw/authorizations.csv']
+  format             = 'CSV',
+  skip_leading_rows  = 1,
+  null_marker        = '',
+  uris               = ['gs://kipo-case01-raw-data/kipo/raw/authorizations.csv']
 );
 
-LOAD DATA OVERWRITE `kipo-case01.kipo_cardpayments.capture`
+
+-- ── 11. capture ──────────────────────────────────────────────
+-- late_capture_at puede ser NULL (campo vacío en el CSV).
+
+LOAD DATA INTO `kipo-case01.kipo_cardpayments.capture`
   (id STRING,
    authorization_id STRING,
    captured_amount_usd NUMERIC,
@@ -175,24 +238,33 @@ LOAD DATA OVERWRITE `kipo-case01.kipo_cardpayments.capture`
    captured_at TIMESTAMP,
    late_capture_at TIMESTAMP)
 FROM FILES (
-  format = 'CSV',
-  skip_leading_rows = 1,
-  uris = ['gs://kipo-case01-raw-data/kipo/raw/captures.csv']
+  format             = 'CSV',
+  skip_leading_rows  = 1,
+  null_marker        = '',
+  uris               = ['gs://kipo-case01-raw-data/kipo/raw/captures.csv']
 );
 
-LOAD DATA OVERWRITE `kipo-case01.kipo_cardpayments.void_reversal`
+
+-- ── 12. void_reversal ────────────────────────────────────────
+
+LOAD DATA INTO `kipo-case01.kipo_cardpayments.void_reversal`
   (id STRING,
    authorization_id STRING,
    reason STRING,
    initiated_by STRING,
    voided_at TIMESTAMP)
 FROM FILES (
-  format = 'CSV',
-  skip_leading_rows = 1,
-  uris = ['gs://kipo-case01-raw-data/kipo/raw/void_reversals.csv']
+  format             = 'CSV',
+  skip_leading_rows  = 1,
+  null_marker        = '',
+  uris               = ['gs://kipo-case01-raw-data/kipo/raw/void_reversals.csv']
 );
 
-LOAD DATA OVERWRITE `kipo-case01.kipo_cardpayments.settlement_batch`
+
+-- ── 13. settlement_batch ─────────────────────────────────────
+-- settlement_date es DATE (formato YYYY-MM-DD), no TIMESTAMP.
+
+LOAD DATA INTO `kipo-case01.kipo_cardpayments.settlement_batch`
   (id STRING,
    acquirer_id STRING,
    settlement_date DATE,
@@ -205,12 +277,17 @@ LOAD DATA OVERWRITE `kipo-case01.kipo_cardpayments.settlement_batch`
    status STRING,
    created_at TIMESTAMP)
 FROM FILES (
-  format = 'CSV',
-  skip_leading_rows = 1,
-  uris = ['gs://kipo-case01-raw-data/kipo/raw/settlement_batches.csv']
+  format             = 'CSV',
+  skip_leading_rows  = 1,
+  null_marker        = '',
+  uris               = ['gs://kipo-case01-raw-data/kipo/raw/settlement_batches.csv']
 );
 
-LOAD DATA OVERWRITE `kipo-case01.kipo_cardpayments.refund`
+
+-- ── 14. refund ───────────────────────────────────────────────
+-- settlement_batch_id puede ser NULL (campo vacío en el CSV).
+
+LOAD DATA INTO `kipo-case01.kipo_cardpayments.refund`
   (id STRING,
    capture_id STRING,
    settlement_batch_id STRING,
@@ -222,12 +299,16 @@ LOAD DATA OVERWRITE `kipo-case01.kipo_cardpayments.refund`
    requested_at TIMESTAMP,
    processed_at TIMESTAMP)
 FROM FILES (
-  format = 'CSV',
-  skip_leading_rows = 1,
-  uris = ['gs://kipo-case01-raw-data/kipo/raw/refunds.csv']
+  format             = 'CSV',
+  skip_leading_rows  = 1,
+  null_marker        = '',
+  uris               = ['gs://kipo-case01-raw-data/kipo/raw/refunds.csv']
 );
 
-LOAD DATA OVERWRITE `kipo-case01.kipo_cardpayments.dispute`
+
+-- ── 15. dispute ──────────────────────────────────────────────
+
+LOAD DATA INTO `kipo-case01.kipo_cardpayments.dispute`
   (id STRING,
    capture_id STRING,
    chargeback_id STRING,
@@ -241,7 +322,8 @@ LOAD DATA OVERWRITE `kipo-case01.kipo_cardpayments.dispute`
    due_date TIMESTAMP,
    resolved_at TIMESTAMP)
 FROM FILES (
-  format = 'CSV',
-  skip_leading_rows = 1,
-  uris = ['gs://kipo-case01-raw-data/kipo/raw/disputes.csv']
+  format             = 'CSV',
+  skip_leading_rows  = 1,
+  null_marker        = '',
+  uris               = ['gs://kipo-case01-raw-data/kipo/raw/disputes.csv']
 );

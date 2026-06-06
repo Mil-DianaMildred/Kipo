@@ -89,7 +89,7 @@ Cumplimiento            SARLAFT · LAFT · reporte a UIAF
 
 | # | Caso | Conceptos clave | Status | Link |
 |---|---|---|---|---|
-| 01 | Flujo completo de pago con tarjeta débito y crédito (Mastercard · Visa) | Autorización, captura, liquidación, interchange, contracargos | Publicado | Ver |
+| 01 | Flujo completo de pago con tarjeta débito y crédito (Mastercard · Visa) | Autorización, captura, liquidación, interchange, contracargos | Publicado | [v1](case-studies/01-card-payment-lifecycle/README.md) · [v2](case-studies/01-card-payment-lifecycle/README_v2.md) |
 | 02 | Cash-in vía corresponsal y acreditación en wallet | Protocolo corresponsal, conciliación, prevención de fraude en efectivo | En proceso |   |
 | 03 | Pagos QR interoperables con Transfiya | Generación de QR, instrucción de pago, tiempo de respuesta, fallback | Backlog |   |
 | 04 | Transferencias ACH en tiempo real | Ventanas de compensación, manejo de errores, devoluciones | Backlog |   |

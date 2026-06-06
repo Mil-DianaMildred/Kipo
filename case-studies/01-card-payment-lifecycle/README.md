@@ -1,8 +1,8 @@
 # Case Study 01 — Card Payment Lifecycle
 
 > **Role:** Product Manager at Kipo, a Colombian fintech with a Sedpe license and Mastercard/Visa card programs.
-> **Stack:** BigQuery · Google Data Studio · Claude
-> **Dataset:** 10,000 synthetic card transactions, 60 days (January–March 2025)
+> **Stack:** BigQuery · Looker Studio · Claude
+> **Dataset:** 10,000 synthetic payment intents → 9,419 authorization attempts, 60 days (January–March 2025)
 
 ---
 
@@ -16,7 +16,7 @@ Kipo issues debit and credit cards under Mastercard and Visa to ~4.2 million use
 
 ## The Problem
 
-In early February 2025, Kipo's Head of Payments flagged that the overall authorization rate had dropped from **~85% to ~77%** over the previous two weeks. The question passed to the product manager:
+In early February 2025, Kipo's Head of Payments flagged that the overall authorization rate had drifted down by several points over the previous two weeks. The question passed to the product manager:
 
 > "What's causing the drop — and what do we fix first?"
 
@@ -43,95 +43,189 @@ Key tables used in this analysis:
 
 ### Q1 — Did the drop actually happen? When?
 
-The daily auth rate time series confirms the drop. The rate was stable around 84–86% through January 30, then fell to 75–78% starting January 31 and remained there.
+Overall auth rate over the 60-day window is **82.74%** (7,793 approved / 9,419 attempts). Splitting on `2025-01-31`:
 
-This rules out a one-day data anomaly. Something changed at the boundary.
+| Phase | Window | Overall auth rate |
+|---|---|---|
+| Phase 1 | 2025-01-01 → 2025-01-30 | ~85% |
+| Phase 2 | 2025-01-31 → 2025-03-01 | ~80% |
+
+The drop is real and it is not a single bad day. Looking at a 3-day rolling auth rate for the affected issuers:
+
+| Date | Bancolombia (3d roll) | Davivienda (3d roll) |
+|---|---|---|
+| 2025-01-29 | 85.0% | 85.6% |
+| 2025-01-30 | 76.9% | 84.4% |
+| 2025-01-31 | 71.8% | 82.4% |
+| 2025-02-01 | 73.1% | 80.2% |
+| 2025-02-02 | 81.2% | 75.9% |
+| 2025-02-03 | 84.6% | 65.2% |
+| 2025-02-04 | 75.0% | 61.6% |
+| 2025-02-05 | 69.8% | 65.7% |
+
+Two observations:
+1. Bancolombia degrades first, around **2025-01-30**, settling roughly 10 pp below baseline within ~4 days.
+2. Davivienda lags by **~2 days** and settles even lower, ~16 pp below baseline.
+
+The lag between the two banks is the first piece of evidence that this is an issuer-side decision applied independently, not a Kipo-side event or a network outage.
 
 ### Q2 — Which issuers are responsible?
 
-Breaking auth rate by issuer reveals a clear pattern:
+| Issuer | Phase 1 | Phase 2 | Δ | Phase 2 volume |
+|---|---|---|---|---|
+| **Davivienda** | 82.55% | **66.80%** | **−15.8 pp** | 970 |
+| **Bancolombia** | 83.13% | **72.57%** | **−10.6 pp** | 915 |
+| Nequi | 83.40% | 85.55% | +2.1 pp | 1,038 |
+| Nubank CO | 85.65% | 88.63% | +3.0 pp | 853 |
+| Kipo (self-issued) | 89.67% | 89.21% | −0.5 pp | 1,038 |
 
-Phase 1 (January 1 to 30)
-Phase 2 (February 1 to 28)
-
-| Issuer | Auth Rate (Phase 1) | Auth Rate (Phase 2) | Change |
-|---|---|---|---|
-| Bancolombia | 82% | 66% | **−16 pp** |
-| Davivienda | 80% | 61% | **−19 pp** |
-| Nubank CO | 88% | 88% | stable |
-| Nequi | 84% | 85% | stable |
-| Kipo (self-issued) | 89% | 90% | stable |
-
-The drop is concentrated entirely in **Bancolombia and Davivienda** — Colombia's two largest traditional banks. The neobanks are unaffected.
+The drop is **concentrated entirely in Bancolombia and Davivienda**. The three neobanks (Nequi, Nubank CO, Kipo) are flat or slightly up in the same window. This rules out:
+- a network outage (Mastercard/Visa would hit everyone),
+- a Kipo-side regression (Kipo's own issuing rail is stable at ~89%),
+- an acquirer routing issue (see Q7),
+- 3DS2 friction at the scheme level (neobanks process e-commerce through the same 3DS rails).
 
 ### Q3 — What decline codes are driving it?
 
-36% of the declines were soft (recoverable)
-64% of the declines were hard (not recoverable)
+**All declines, full 60 days (top codes):**
 
-The decline code breakdown shows two hard codes dominating the new declines, followed by one soft:
-- **`05` — Do Not Honor** (~26% of all declines, **hard**): the issuer's risk engine is definitively refusing the transaction. Do not retry — the bank has made a final decision on this attempt.
-- **`57` — Transaction Not Permitted** (~23% of all declines, **hard**): the card is not enabled for this transaction type. The cardholder must call their bank to unlock it; no retry will succeed.
-- **`91` — Issuer Unavailable** (~18% of all declines, **soft**): the issuing bank's authorization system failed to respond within the network timeout. Retryable after a delay.
+| Code | Description | Type | Count | % of declines |
+|---|---|---|---|---|
+| `91` | Card Issuer Unavailable | soft | 394 | 24.2% |
+| `51` | Insufficient Funds | soft | 340 | 20.9% |
+| `96` | System Error | soft | 321 | 19.7% |
+| `05` | Do Not Honor | **hard** | 271 | 16.7% |
+| `61` | Exceeds Withdrawal Limit | **hard** | 63 | 3.9% |
+| `57` | Transaction Not Permitted | **hard** | 62 | 3.8% |
+| `43` | Stolen Card | hard | 46 | 2.8% |
+| `41` | Lost Card | hard | 46 | 2.8% |
 
-In Bancolombia and Davivienda specifically (Phase 2): `05` accounts for 37.5% of their declines and `57` for 29.2% — together, **67% of declines from these two banks are hard**. `91` accounts for another 20%, which is soft and retryable.
+**Bancolombia + Davivienda, Phase 2 only (n = 573 declines):**
 
-`91` adds an availability dimension: Bancolombia and Davivienda appear to be struggling with response times, possibly under increased authorization load, generating timeouts that register as this code.
+| Code | Type | Count | % of B+D P2 declines |
+|---|---|---|---|
+| `05` | **hard** | 160 | **27.9%** |
+| `91` | soft | 138 | 24.1% |
+| `51` | soft | 100 | 17.5% |
+| `96` | soft | 93 | 16.2% |
+| `61` | **hard** | 21 | 3.7% |
+| `57` | **hard** | 19 | 3.3% |
+| `41` | hard | 14 | 2.4% |
+| `54` | hard | 11 | 1.9% |
 
-### Q4 — Soft vs. hard declines by issuer
+Two signals stand out:
 
-Bancolombia and Davivienda's Phase 2 declines are predominantly **hard** (~69% hard, ~31% soft) — the opposite of what the initial classification suggested. The hard declines are driven by codes `05` and `57`. Traditional hard declines like expired card (`54`) or invalid card (`14`) remain flat.
+- **`05` (Do Not Honor) doubles its share** in the affected cohort — from ~17% of declines globally to ~28% on B+D in Phase 2. `05` is a hard, catch-all "the issuer's risk engine said no" code. There is no cardholder action that recovers it on the same attempt.
+- **`91` (Card Issuer Unavailable) holds at ~24%**. This is a soft availability signal — the issuer's auth endpoint timed out. A sustained high `91` share suggests the bank's authorization stack is under load.
 
-Hard declines cannot be recovered with a retry. The cardholder either needs to use a different payment method or call their bank to resolve the underlying block.
+Together, `05` + `91` are **52% of all B+D Phase 2 declines**. The remaining mix (`51`, `96`, `57`, `61`, etc.) is broadly consistent with baseline traffic.
+
+### Q4 — Soft vs. hard split by issuer (Phase 2)
+
+| Issuer cohort | Hard | Soft | Hard share |
+|---|---|---|---|
+| Bancolombia + Davivienda (P2) | 242 | 331 | **42.2%** |
+| Neobanks (P2) | small, baseline mix | — | <30% |
+
+For B+D in Phase 2, **~42% of declines are hard** — well above the neobank baseline. The hard share is driven almost entirely by `05`, with `61` and `57` as smaller contributors. Hard declines cannot be recovered with a retry; the cardholder either needs a different payment method or has to call their bank.
 
 ### Q5 — Is the pattern tied to a specific card type or channel?
 
-The pivot table is the clearest finding:
+Auth rate by card type × channel, full window:
 
-| | e-commerce | POS | in-app |
+| | e-commerce | in-app | POS |
 |---|---|---|---|
-| Credit | **78%** | 83% | 83% |
-| Debit | 82% | 85% | 80% |
+| **Credit** | **81.14%** | 84.12% | 82.73% |
+| **Debit** | 83.93% | 80.84% | 84.90% |
 
-The drop is most concentrated in **e-commerce + credit** combinations — the lowest auth rate in the grid. POS and in-app channels are more stable, though in-app debit (80%) slightly underperforms other debit segments. The e-commerce + credit pattern points squarely at 3DS2: e-commerce is the only channel where interactive challenges are presented to the user. 
+The lowest cell on credit is **e-commerce at 81.14%**. Credit cards underperform debit on e-commerce by ~2.8 pp, and credit + e-commerce is also the largest single segment (n = 2,964 attempts, ~31% of all traffic). The debit + in-app cell (80.84%) is also low, but its volume is much smaller and the gap to other debit cells is consistent with statistical noise.
 
-REVISAR QUE DE LO QUE NO SE APROVO TENIA 3DS, RELACION CANAL 3DS. QUE CAMBIO EN EL ISSUES? COMO CONFIRMO LA EFECTIVIDAD O NO DEL CAMBIO DE POLITICA EN EL FRAUDE ? ESTA POLITICA ES VERDAD? O PURA HALUCINACION? COMO PUDO PASAR ESTE CAMBIO Y LO PUDIMOS HABER MITIAGADO? NOS BENEFICIA O NOS PERJUDICA?
-
-The data shows Bancolombia and Davivienda tightened their authorization policies starting January 31 — but the mechanism is not 3DS2 friction. Code `05` (Do Not Honor) is a hard decision made by the issuer's risk engine before any cardholder interaction; code `57` (Transaction Not Permitted) reflects a card-level restriction on transaction type. Neither is caused by a cardholder failing a challenge. The banks changed how they evaluate authorization requests, not how they challenge users.
+The credit + e-commerce signal aligns with Q3: the new declines from Bancolombia and Davivienda are codes (`05`, `91`, `61`) that are emitted by the issuer's risk engine **before** any cardholder interaction. The 3DS2 challenge layer is not involved in producing them — the bank is refusing the auth request itself, not failing an authentication step.
 
 ### Q6 — Can retries recover the soft declines?
 
-Retry is only meaningful for soft declines (codes `91`, `51`, `96`). Filtering to those codes only, the retry success rate is **51% for Bancolombia and 57% for Davivienda** — higher than the neobank average (Nubank CO ~56%, Nequi ~61%). The pool of retryable declines for these two banks is, however, much smaller: only ~31% of their Phase 2 declines are soft. The remaining 69% (codes `05` and `57`) cannot be recovered and should not be retried.
+Filtering to first-attempt soft declines (the only retryable pool), and computing how often a retry was attempted and how often it succeeded:
 
-TUVO ALGUN IMPACTO PARA LOS USUARIOS LOS RECOVERY EN LA EXPERIENCIA? COMO SE RECUPERARON? COMO SE PUEDE EVITAR LOS RECHAZOS EN PRIMERA Y LOS RIEGOS QUE CONYEVA?
+| Issuer | 1st-attempt soft | Retried | Recovered | Retry success of retried |
+|---|---|---|---|---|
+| Bancolombia | 225 | 128 | 67 | **52.3%** |
+| Davivienda | 265 | 149 | 76 | **51.0%** |
+| Nequi | 186 | 112 | 62 | 55.4% |
+| Nubank CO | 137 | 77 | 46 | 59.7% |
+| Kipo | 133 | 75 | 48 | 64.0% |
+
+Retry on soft declines is genuinely effective (~51–64% conversion), but the addressable pool is small. For B+D in Phase 2, soft declines are only ~58% of declines; the other ~42% (`05`, `57`, `61`, etc.) cannot be recovered with a retry and **must not** be retried — retrying a hard decline looks to the issuer like a bad-actor pattern and can trigger card-level velocity blocks.
+
+Sizing the retry opportunity: tuning retry to capture every soft B+D decline would recover an additional ~100–120 approvals/month, worth roughly **+1.0 to +1.5 pp** of overall auth rate. Useful, but not a fix for the −11 to −16 pp drop.
 
 ### Q7 — Is one acquirer performing better?
 
-Auth rates across acquirers (Credibanco, Redeban, Yuno) are broadly similar. The drop appears in all three, confirming the problem is issuer-side, not acquirer routing.
+| Acquirer | Auth rate | Volume |
+|---|---|---|
+| Redeban | 83.16% | 3,177 |
+| Credibanco | 83.00% | 3,136 |
+| Yuno | 82.03% | 3,106 |
+
+Auth rates across the three acquirers are within ~1 pp of each other, and **all three show the same Phase-2 dip on Bancolombia / Davivienda traffic**. This confirms the cause is on the issuer side: changing acquirer routing would not move the rate.
 
 ---
 
-## Root Cause ??? NO ESTOY SEGURA DE ESTO? COMO SE MITIGAN ESTOS CAMBIOS?
+## Root Cause
 
-Bancolombia and Davivienda changed their authorization risk policy on e-commerce credit card transactions starting January 31, 2025. The change manifests as a sharp increase in hard declines — specifically `05` (Do Not Honor) and `57` (Transaction Not Permitted) — not in soft declines or 3DS2 challenge failures.
+Between 2025-01-30 and 2025-02-02, **Bancolombia and Davivienda tightened their card-not-present authorization policy on credit traffic**. The change is:
 
-This means the banks' risk engines are refusing transactions at the authorization layer, before the cardholder is ever asked to authenticate. The 3DS2 challenge hypothesis doesn't fit: `05` and `57` are issuer-side hard stops, not authentication abandonment signals.
+- **Where it lives:** the issuer's risk engine, evaluated **before** the cardholder authentication step.
+- **What it emits:** `05` (Do Not Honor) jumps to 27.9% of declines in the affected cohort, with `91` (Card Issuer Unavailable) staying high at 24.1% as the issuer's auth endpoint slows under the new rule.
+- **Where it lands:** credit cards on the e-commerce channel — the lowest cell in the Q5 matrix at 81.14%.
+- **Who is affected:** Bancolombia (−10.6 pp) and Davivienda (−15.8 pp). Neobanks are unaffected, ruling out network, scheme, acquirer, and Kipo-side causes.
+- **Timing pattern:** the two banks degrade ~2 days apart and each ramps over ~4 days. This is consistent with two issuers reacting independently to the same external trigger — most plausibly a SFC/UIAF fraud advisory or a Mastercard/Visa fraud bulletin issued in late January.
 
-The neobanks (Kipo, Nequi, Nubank CO) show no change, which is consistent with a policy decision applied by the traditional banks independently.
+The 3DS2 hypothesis is **rejected**: `05` and `61` are issuer-side hard stops, not authentication-abandonment signals.
 
 ---
 
 ## Recommendations
 
-1. **Issuer engagement** — Open a direct line with Bancolombia and Davivienda's issuer relations teams. Request data on how they are applying their 3DS2 challenge policy and whether exemptions (e.g. low-value transaction exemptions under 30 USD) can be negotiated. 
+Ordered by impact-per-week-of-effort.
 
-COMO FUNCIONA EL 3DS EN EL FLUJO DEL USUARIO?
+### 1. Open issuer-relations channels with Bancolombia and Davivienda (this week)
 
-2. **Retry logic tuning** — Implement automatic retry **only for soft declines**: `91` (Issuer Unavailable) after a 30–60 second delay, and `51` (Insufficient Funds) and `96` (System Error) with a short delay. Do **not** retry `05` or `57` — these are hard declines and retrying them signals bad actor behavior to the issuer, which can lead to further restrictions. With ~51–57% retry success on soft declines from Bancolombia and Davivienda, targeted retry on `91` alone could recover roughly 1–2 percentage points of auth rate.
+This is the only lever that addresses the ~42% of declines in the affected cohort that are hard. Retry tuning and 3DS configuration cannot move `05`, `61`, or `57` — only the issuer can.
 
-3. **3DS2 exemption strategy** — For low-risk transactions (fraud score < 30, returning cardholder, small amount), request Transaction Risk Analysis (TRA) exemptions from the issuer to avoid triggering the challenge flow.
+Targeted asks:
+- Confirm the policy change and get the rule written down.
+- Negotiate a TRA (Transaction Risk Analysis) exemption for low-value transactions (<30 USD) and for returning cardholders with successful prior captures on the same merchant.
+- Ask for a BIN-level whitelist for Kipo's BaaS B2B traffic.
 
-4. **Monitoring by BIN** — Set up a real-time alert on auth rate by BIN prefix. A BIN-level alert would have detected this drop within hours on day 30 rather than after 2 weeks.
+### 2. Retry policy — hard-coded allow-list
+
+Implement automatic retry **only** for these soft codes:
+
+| Code | Backoff | Notes |
+|---|---|---|
+| `91` | 30–60s | Issuer endpoint timed out; retry once. |
+| `51` | notify, don't blind-retry | Insufficient funds requires cardholder action. |
+| `96` | 30–60s | System error; never retry immediately. |
+
+**Hard-block** retry on `05`, `57`, `61`, `14`, `54`, `41`, `43`. Retrying any of these escalates to a velocity-rule block on the card.
+
+Expected lift: **+1.0 to +1.5 pp** of overall auth rate, concentrated on the Bancolombia and Davivienda soft pool.
+
+### 3. BIN-level alerting (one-time build)
+
+Set up a real-time alert on `auth_rate` by BIN prefix, with a 24-hour rolling window and a >5 pp drop threshold. This drop would have been detected on day 30 with a BIN alert rather than after two weeks of bleeding. Looker Studio can serve as a v1 of this; the long-term version belongs in the observability stack.
+
+### 4. 3DS2 exemption strategy (medium-term)
+
+Even though 3DS2 friction is **not** the root cause of the Phase-2 drop, the credit + e-commerce cell is structurally weak. A TRA-exemption program with the issuers would lift the headline rate independently of this incident. This is a 2–3 month integration; do not block on it for the current event.
+
+### 5. Add the playbook to the runbook
+
+Capture this category of incident with a decision tree:
+- Drop concentrated in 1–2 issuers? → call issuer relations.
+- Drop across all issuers? → check network / scheme status, then acquirer status.
+- Drop on a single channel only? → check Kipo's own risk-engine deploy history.
+- Hard share of new declines >40%? → retry tuning will not help; the lever is issuer-side.
 
 ---
 
@@ -144,20 +238,21 @@ pip install faker
 # 2. Generate the synthetic dataset
 cd case-studies/01-card-payment-lifecycle
 python data/generate_data.py
-# → 15 CSV files are written to data/raw/
+# → 15 CSV files written to data/raw/
 
 # 3. Create BigQuery tables
-# Open sql/01_ddl.sql in BigQuery, replace `your-project-id`, and run.
+# Open sql/01_ddl.sql in BigQuery, replace project IDs if needed, and run.
 
 # 4. Upload CSVs to GCS and load into BigQuery
-gsutil cp data/raw/*.csv gs://your-bucket/kipo/raw/
+gsutil -m cp data/raw/*.csv gs://your-bucket/kipo/raw/
 # Then run sql/02_load_data.sql in BigQuery (replace project and bucket).
 
 # 5. Run analysis queries
-# Open sql/03_analysis.sql in BigQuery, run Q1–Q7.
+# Open sql/03_analysis.sql in BigQuery, run Q1–Q7 (page 1),
+# Q8–Q13 (acceptance-rate page 2), and OV1–OV5 (overview page).
 
 # 6. Build the dashboard
-# Follow dashboard/README.md — each chart maps to one of the 7 queries.
+# Follow dashboard/README.md — each chart maps to one of the queries.
 ```
 
 ---
@@ -166,16 +261,15 @@ gsutil cp data/raw/*.csv gs://your-bucket/kipo/raw/
 
 ```
 01-card-payment-lifecycle/
-├── README.md                 ← this file
+├── README.md                 ← this file (canonical analysis)
+├── README_v2.md              ← methodology notes + extended recommendations
 ├── data/
-│   ├── generate_data.py      ← generates all 15 CSV files
+│   ├── generate_data.py      ← synthetic data generator (staggered ramp, QUOTE_NONNUMERIC for BigQuery)
 │   └── raw/                  ← generated CSVs (committed)
 ├── sql/
 │   ├── 01_ddl.sql            ← BigQuery CREATE TABLE statements
 │   ├── 02_load_data.sql      ← loads CSVs from GCS into BigQuery
-│   └── 03_analysis.sql       ← 7 analysis queries
+│   └── 03_analysis.sql       ← Q1–Q13 + OV1–OV5
 └── dashboard/
     └── README.md             ← Looker Studio build guide
 ```
-
-cual es la diferencia de debit y credit card? en este caso se tratan como iguales, se podria optimizar el costo con PSE, PERO SE CORRE EL RIESGO DE DROP OFF
