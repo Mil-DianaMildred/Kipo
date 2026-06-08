@@ -1,10 +1,10 @@
 # Dashboard — Card Payment Auth Rate
 
-> 🇬🇧 **English** (main) · [🇪🇸 Español](#-versión-en-español)
+> **English** (main) · [Español](#-versión-en-español)
 
 ---
 
-# 🇬🇧 English version
+# English version
 
 Looker Studio dashboard built on BigQuery. Visualizes the analysis queries from `sql/03_analysis.sql` across three pages: **Overview**, **Auth Rate**, **Acceptance Rate**.
 
@@ -303,7 +303,7 @@ This is broader than auth rate — it captures every drop-off point in the funne
 
 ---
 
-# 🇪🇸 Versión en español
+# Versión en español
 
 Dashboard de Looker Studio construido sobre BigQuery. Visualiza las queries de análisis de `sql/03_analysis.sql` a través de tres páginas: **Overview**, **Auth Rate**, **Acceptance Rate**.
 

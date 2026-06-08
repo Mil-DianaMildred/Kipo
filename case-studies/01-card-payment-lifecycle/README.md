@@ -1,10 +1,10 @@
 # Case Study 01 — Card Payment Lifecycle
 
-> 🇬🇧 **English** (main) · [🇪🇸 Español](#-versión-en-español)
+> **English** (main) · [Español](#-versión-en-español)
 
 ---
 
-# 🇬🇧 English version
+# English version
 
 > **Role:** Product Manager at Kipo, a Colombian fintech with a Sedpe license and Mastercard/Visa card programs.
 > **Stack:** BigQuery · Looker Studio · Claude
@@ -282,7 +282,7 @@ gsutil -m cp data/raw/*.csv gs://your-bucket/kipo/raw/
 
 ---
 
-# 🇪🇸 Versión en español
+# Versión en español
 
 > **Rol:** Product Manager en Kipo, una fintech colombiana con licencia Sedpe y programas de tarjetas Mastercard/Visa.
 > **Stack:** BigQuery · Looker Studio · Claude

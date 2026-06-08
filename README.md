@@ -1,10 +1,10 @@
 # Kipo — Fintech
 
-> 🇬🇧 **English** (main) · [🇪🇸 Español](#-versión-en-español)
+> **English** (main) · [Español](#-versión-en-español)
 
 ---
 
-# 🇬🇧 English version
+# English version
 
 > **"Your money, no detours."**
 > A fictional company built as a framework to explore and share how payments infrastructure really works in Colombia: cards, wallets, cash-in/cash-out, QR, BaaS, and regulatory compliance.
@@ -127,7 +127,7 @@ The case studies ground real ecosystem concepts: SFC/UIAF regulation, ACH and Tr
 
 ---
 
-# 🇪🇸 Versión en español
+# Versión en español
 
 > **"Tu plata, sin rodeos."**
 > Empresa ficticia creada como marco de trabajo para explorar y compartir cómo funciona realmente la infraestructura de pagos en Colombia: tarjetas, wallets, cash-in/cash-out, QR, BaaS y cumplimiento regulatorio.
