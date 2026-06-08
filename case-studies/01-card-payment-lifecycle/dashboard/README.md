@@ -1,5 +1,11 @@
 # Dashboard — Card Payment Auth Rate
 
+> 🇬🇧 **English** (main) · [🇪🇸 Español](#-versión-en-español)
+
+---
+
+# 🇬🇧 English version
+
 Looker Studio dashboard built on BigQuery. Visualizes the analysis queries from `sql/03_analysis.sql` across three pages: **Overview**, **Auth Rate**, **Acceptance Rate**.
 
 ---
@@ -294,3 +300,302 @@ This is broader than auth rate — it captures every drop-off point in the funne
 
 ### Filters for Page 0
 - Reuse the same **date range control** from Page 1 (apply to OV2 via `txn_date` and OV3 via `week`)
+
+---
+
+# 🇪🇸 Versión en español
+
+Dashboard de Looker Studio construido sobre BigQuery. Visualiza las queries de análisis de `sql/03_analysis.sql` a través de tres páginas: **Overview**, **Auth Rate**, **Acceptance Rate**.
+
+---
+
+## Cifras de cabecera esperadas (sanity check)
+
+Después de cargar el dataset v3, el dashboard debería mostrar estos valores. Si un chart se desvía más de ~1 pp, revisar el paso de LOAD antes de debuguear el chart.
+
+| Métrica | Esperado | Dónde aparece |
+|---|---|---|
+| Tasa de autorización global (60 días) | **82.7%** | KPI scorecard, OV1 |
+| Total de intentos de autorización | **9.419** | KPI scorecard |
+| Bancolombia F1 → F2 | 83.1% → 72.6% (**−10.6 pp**) | Q2 + filtro de fecha |
+| Davivienda F1 → F2 | 82.6% → 66.8% (**−15.8 pp**) | Q2 + filtro de fecha |
+| Neobancos (Nequi / Nubank CO / Kipo) | plano 85–89% | Q2 |
+| Código de declinación top global | `91` Card Issuer Unavailable, 24% | Q3 |
+| Código de declinación top en cohort afectado | `05` Do Not Honor, ~28% en B+D Fase 2 | Q3 con filtro de emisor |
+| Participación hard de declinaciones B+D Fase 2 | ~42% | Q4 |
+| Peor celda tipo-de-tarjeta × canal | crédito × e-commerce, **81.1%** | Q5 |
+| Éxito de reintento sobre soft (B+D) | ~51–52% | Q6 |
+| Tasa de autorización por adquirente | los tres dentro de ~1 pp | Q7 |
+
+---
+
+## 1. Conectar BigQuery a Looker Studio
+
+1. Abrir [Looker Studio](https://lookerstudio.google.com) → **Crear** → **Fuente de datos**
+2. Seleccionar el conector **BigQuery**
+3. Elegir tu proyecto GCP → dataset `kipo_payments`
+4. Agregar `auth_attempt` como tabla base (la mayoría de charts la consultan)
+5. Repetir para cualquier tabla que un chart necesite directamente (ej. `settlement_batch` para análisis de fees)
+
+Para charts que usan JOINs entre tablas, pegar la query SQL correspondiente en una fuente de datos de **Custom query**.
+
+---
+
+## 2. Layout del dashboard
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  KPI — Tasa de Autorización  │  KPI — Total Transacciones    │
+├─────────────────────────────┴────────────────────────────────┤
+│  Q1 — Tendencia diaria de auth rate (línea, ancho completo)  │
+├─────────────────────────────┬────────────────────────────────┤
+│  Q2 — Auth rate por emisor  │  Q3 — Desglose códigos decl.   │
+│  (barra horizontal)         │  (barra)                        │
+├─────────────────────────────┼────────────────────────────────┤
+│  Q4 — Soft vs hard por      │  Q5 — Auth rate por tipo de    │
+│  emisor (barra apilada)     │  tarjeta × canal (pivot table)  │
+├─────────────────────────────┴────────────────────────────────┤
+│  Q6 — Éxito de reintento por emisor  │  Q7 — Por adquirente  │
+└─────────────────────────────────────┴──────────────────────-─┘
+```
+
+---
+
+## 3. Guía de build chart por chart
+
+### KPI scorecards (fila superior)
+- Fuente de datos: custom query sobre `auth_attempt`
+  ```sql
+  SELECT
+    ROUND(COUNTIF(response_code = '00') / COUNT(*), 4) AS auth_rate,
+    COUNT(*) AS total_attempts
+  FROM `kipo-case01.kipo_cardpayments.auth_attempt`
+  ```
+- Agregar dos **Scorecards**: uno para `auth_rate` (formateado como %), otro para `total_attempts`
+
+### Q1 — Tendencia diaria de auth rate
+- Custom query: Q1 de `03_analysis.sql`
+- Tipo de chart: **Time series**
+- Dimensión: `attempt_date`
+- Métrica: `auth_rate`
+- Agregar **dos líneas de referencia** para marcar el cambio escalonado de política:
+  - `2025-01-30` — comienza el ramp de Bancolombia
+  - `2025-02-01` — comienza el ramp de Davivienda (~2 días de rezago)
+- La serie diaria es ruidosa a ~150–200 intentos/día. Activar **media móvil de 3 días** en el estilo del chart para que el ramp se lea bien; la línea diaria cruda debe quedar visible debajo como un trazo más claro.
+
+### Q2 — Auth rate por emisor
+- Custom query: Q2 de `03_analysis.sql`
+- Tipo de chart: **Bar chart** (horizontal)
+- Dimensión: `issuer`
+- Métrica: `auth_rate`
+- Ordenar ascendente por `auth_rate` para poner los peores emisores arriba
+
+### Q3 — Desglose de códigos de declinación
+- Custom query: Q3 de `03_analysis.sql`
+- Tipo de chart: **Bar chart**
+- Dimensión: `description`
+- Métrica: `total_declines`
+- Colorear por `decline_type` desde el **join al catálogo** en Q3 (soft = naranja, hard = rojo). El catálogo es la fuente de verdad.
+- La declinación top global es `91` Card Issuer Unavailable (soft, ~24%). La pistola humeante vive en el cohort afectado: aplicar un filtro `issuer IN ('Bancolombia','Davivienda')` junto con un filtro de fecha de Fase 2 y `05` Do Not Honor salta a ~28%.
+
+### Q4 — Declinaciones soft vs. hard por emisor
+- Custom query: Q4 de `03_analysis.sql`
+- Tipo de chart: **Stacked bar chart**
+- Dimensión: `issuer`
+- Breakdown: `decline_type` (tomado de `decline_code_catalog`, no de `auth_attempt.decline_type` — ver la [nota sobre fuente de datos](#nota-fuente-de-datos) abajo)
+- Métrica: `decline_count`
+- La lectura: Bancolombia y Davivienda en Fase 2 deberían mostrar ~42% de participación hard, muy por encima del baseline de los neobancos.
+
+### Q5 — Auth rate por tipo de tarjeta × canal
+- Custom query: Q5 de `03_analysis.sql`
+- Tipo de chart: **Pivot table**
+- Dimensión de fila: `card_type`
+- Dimensión de columna: `channel`
+- Métrica: `auth_rate`
+- Formato condicional: rojo si <0.82, amarillo 0.82–0.84, verde si >0.84. Con los datos v3, crédito × e-commerce cae a ~0.81 (la única celda roja), débito × in-app a ~0.81 como segunda más baja ruidosa, y el resto se agrupa entre 0.83–0.85.
+
+### Q6 — Tasa de éxito de reintento por emisor
+- Custom query: Q6 de `03_analysis.sql`
+- Tipo de chart: **Bar chart**
+- Dimensión: `issuer`
+- Métrica: `retry_success_rate`
+- Valores esperados: Bancolombia ~52%, Davivienda ~51%, Nequi ~55%, Nubank CO ~60%, Kipo ~64%. Ordenar ascendente para poner el peor performer arriba.
+- Agregar una columna `soft_declines` como métrica secundaria en el tooltip — recuerda al espectador que el pool de reintento es pequeño (~225–265 soft de primer intento por banco afectado), por lo que el lift recuperable está acotado.
+
+### Q7 — Auth rate por adquirente
+- Custom query: Q7 de `03_analysis.sql`
+- Tipo de chart: **Bar chart** (horizontal)
+- Dimensión: `acquirer`
+- Métrica: `auth_rate`
+- Los tres adquirentes deberían aterrizar dentro de ~1 pp entre sí (~82–83%). La distribución plana es en sí misma el hallazgo: el enrutamiento no es la causa.
+
+---
+
+<a id="nota-fuente-de-datos"></a>
+### Nota sobre la fuente de datos — usar el catálogo para `decline_type`
+
+`auth_attempt.decline_type` es una copia desnormalizada del valor del catálogo, poblada en tiempo de generación. El generador v3 la mantiene consistente, pero el catálogo (`decline_code_catalog.decline_type`) es la fuente autorizada. Cualquier chart que parta o coloree por soft/hard debe unirse a través del catálogo:
+
+```sql
+FROM `kipo-case01.kipo_cardpayments.auth_attempt` aa
+JOIN `kipo-case01.kipo_cardpayments.decline_code_catalog` dc
+  ON aa.decline_code = dc.code
+```
+
+Q3 y Q4 en `03_analysis.sql` ya lo hacen. Si construyes un chart nuevo desde cero, haz lo mismo.
+
+---
+
+## 4. Filtros para agregar
+
+Agregar un **filtro de rango de fechas** en la parte superior del dashboard para que los espectadores puedan comparar fases:
+- Control: **Date range control**
+- Campo: `attempt_date` (fuente de datos de Q1)
+- Atajos preestablecidos a agregar: **Fase 1** (2025-01-01 → 2025-01-29), **Fase 2** (2025-02-02 → 2025-03-01). El intervalo de 3 días (2025-01-30 → 2025-02-01) es la ventana del ramp — excluirlo de ambos presets para que la comparación de magnitud sea limpia.
+
+Agregar un **filtro desplegable** para `issuer` para que los espectadores puedan aislar un banco. La secuencia de drill-down esperada es: abrir con el filtro de emisor en **Todos**, ver el bache de Q1, luego cambiar a **Bancolombia** para ver el ramp más temprano, luego a **Davivienda** para ver el valle más profundo.
+
+---
+
+## 5. Página 2 — Tasa de Aceptación
+
+**Definición:** tasa de aceptación = % de payment intents que terminan en una captura exitosa.
+Es más amplia que la auth rate — captura cada punto de drop-off en el funnel: bloqueos de riesgo, declinaciones del emisor y abandono post-auth.
+
+### Layout
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│  KPI — Acceptance Rate  │  KPI — Auth Rate  │  KPI — Risk Block Rate │
+├────────────────────────────────────────────────────────────────────-┤
+│  Q8 — Desglose del funnel (fila scorecard: intents → attempted →    │
+│        authorized → captured, con % en cada etapa)                  │
+├─────────────────────────────────────────────────────────────────────┤
+│  Q9 — Tasa de aceptación vs auth rate diaria (dual-line, completo)  │
+├──────────────────────────────────┬──────────────────────────────────┤
+│  Q10 — Tasa de aceptación por    │  Q11 — Risk block por banda de   │
+│  canal (barra agrupada)          │  fraud score (barra apilada)     │
+├──────────────────────────────────┼──────────────────────────────────┤
+│  Q12 — Impacto 3DS sobre captura │  Q13 — Aceptación por categoría  │
+│  rate (tabla)                    │  de comercio, top 10 (barra)     │
+└──────────────────────────────────┴──────────────────────────────────┘
+```
+
+### KPI scorecards (fila superior)
+- Fuente de datos: custom query Q8
+- Tres **Scorecards**: `acceptance_rate` (%), `auth_rate` (%), `risk_block_rate` (%)
+- Aplicar formato condicional: rojo si `acceptance_rate` < 0.80
+
+### Q8 — Desglose del funnel
+- Custom query: Q8 de `03_analysis.sql`
+- Tipo de chart: cuatro **Scorecard tiles** en una fila horizontal, uno por etapa del funnel:
+  `total_intents` → `attempted` (+ `attempt_rate`) → `authorized` (+ `auth_rate`) → `captured` (+ `acceptance_rate`)
+- Esto muestra el drop-off absoluto en cada paso
+
+### Q9 — Tasa de aceptación vs auth rate diaria
+- Custom query: Q9 de `03_analysis.sql`
+- Tipo de chart: **Time series** con dos métricas: `auth_rate` (azul) y `acceptance_rate` (verde)
+- Dimensión: `txn_date`
+- Agregar **dos líneas de referencia** que coincidan con la Página 1: `2025-01-30` (ramp Bancolombia) y `2025-02-01` (ramp Davivienda)
+- Activar media móvil de 3 días — mismo nivel de ruido que Q1
+- Si las dos métricas se mueven juntas, la caída está aguas arriba de la captura (riesgo + auth). Si divergen con `acceptance_rate` cayendo más que `auth_rate`, revisar los bloqueos de riesgo (Q11) o el abandono post-auth (Q12).
+
+### Q10 — Tasa de aceptación por canal
+- Custom query: Q10 de `03_analysis.sql`
+- Tipo de chart: **Grouped bar chart**
+- Dimensión: `channel`
+- Métricas: `auth_rate` y `acceptance_rate` como dos barras por canal
+- Ordenar por `acceptance_rate` ascendente para destacar el peor canal primero
+
+### Q11 — Desglose de bloqueos de riesgo por banda de fraud score
+- Custom query: Q11 de `03_analysis.sql`
+- Tipo de chart: **Stacked bar chart**
+- Dimensión: `fraud_score_band`
+- Breakdown: `decision` (pass = verde, block = rojo)
+- Métrica: `intents`
+- Esto muestra qué bandas de score contienen la mayor cantidad de pagos bloqueados
+
+### Q12 — Impacto 3DS sobre la tasa de captura post-auth
+- Custom query: Q12 de `03_analysis.sql`
+- Tipo de chart: **Table** con formato condicional
+- Dimensiones: `is_3ds`, `three_ds_result`
+- Métricas: `authorizations`, `captured`, `capture_to_auth_rate`
+- Aplicar formato condicional sobre `capture_to_auth_rate`: rojo si <0.85, amarillo 0.85–0.92, verde si ≥0.92
+- Este es el chart que **cierra la hipótesis 3DS**. El caso de estudio sostiene que la caída de auth está aguas arriba de 3DS (el banco rechaza antes de que el tarjetahabiente sea desafiado). Si `capture_to_auth_rate` sobre `three_ds_result = Y` es aproximadamente igual al de no-3DS, la data respalda ese argumento. Una celda roja aquí lo reabriría.
+
+### Q13 — Tasa de aceptación por categoría de comercio
+- Custom query: Q13 de `03_analysis.sql`
+- Tipo de chart: **Bar chart** (horizontal)
+- Dimensión: `mcc_description`
+- Métrica: `acceptance_rate`
+- Métrica secundaria: `total_intents` (tamaño de burbuja o tooltip)
+- Ordenar ascendente por `acceptance_rate` para poner las peores categorías arriba
+- Limitar al top 10 por volumen (ya aplicado en la query)
+
+### Filtros para la Página 2
+- Reutilizar el mismo **date range control** de la Página 1 (aplicarlo a Q9 vía `txn_date`)
+- Agregar un **filtro desplegable** para `channel` ligado a Q10
+
+---
+
+## 6. Página 0 — Overview
+
+**Propósito:** vista ejecutiva de los seis KPIs de cabecera antes de hacer drill-down a cualquier página de detalle. En Looker Studio, configurarla como la primera página del reporte.
+
+### Layout
+
+```
+┌────────────────────────────────────────────────────────────────────────────────────────┐
+│ Auth Rate │ Acceptance Rate │ Fraud Rate │ Chargeback Rate │ Cost/Txn │ Días a Liq.   │
+├────────────────────────────────────────────────────────────────────────────────────────┤
+│  OV2 — Tendencia auth rate vs. acceptance rate (línea, completo) — reutiliza Q9       │
+├──────────────────────────────────────┬─────────────────────────────────────────────────┤
+│  OV3 — Tasa de fraude y chargeback   │  OV4 — Costo por transacción por adquirente     │
+│  por semana (dual-line time series)  │  (barra apilada: interchange / scheme / acq.)   │
+├──────────────────────────────────────┴─────────────────────────────────────────────────┤
+│  OV5 — Tiempo a liquidación por adquirente (barra horizontal, completo)                │
+└────────────────────────────────────────────────────────────────────────────────────────┘
+```
+
+### KPI scorecards (fila superior)
+- Fuente de datos: custom query OV1
+- Seis **Scorecards**, uno por métrica. Los umbrales están calibrados contra el baseline v3 (global 82.7%, con B+D jalando el promedio hacia abajo), no contra un target aspiracional:
+  - `auth_rate` — etiqueta "Auth Rate". Rojo <0.80, amarillo 0.80–0.84, verde ≥0.84. (La tasa global a 60 días de 82.7% aterriza en amarillo porque la Fase 2 la pesa hacia abajo; la Fase 1 sola sería verde.)
+  - `acceptance_rate` — etiqueta "Acceptance Rate". Rojo <0.70, amarillo 0.70–0.75, verde ≥0.75.
+  - `fraud_rate` — etiqueta "Fraud Rate". Rojo >0.01, amarillo 0.005–0.01, verde <0.005.
+  - `chargeback_rate` — etiqueta "Chargeback Rate". Rojo >0.02, amarillo 0.01–0.02, verde <0.01.
+  - `cost_per_txn_usd` — etiqueta "Cost / Transaction (USD)". Sin umbral; mostrar con 4 decimales.
+  - `avg_days_to_settlement` — etiqueta "Avg Days to Settlement". Rojo >2, amarillo 2, verde <2 (T+2 es el estándar de industria).
+
+### OV2 — Tendencia auth rate vs. acceptance rate
+- Custom query: **Q9** de `03_analysis.sql` (la misma query usada en la Página 2)
+- Tipo de chart: **Time series** — `auth_rate` (azul), `acceptance_rate` (verde)
+- Dimensión: `txn_date`
+- Agregar **dos líneas de referencia**: `2025-01-30` (ramp Bancolombia) y `2025-02-01` (ramp Davivienda)
+- Activar media móvil de 3 días
+
+### OV3 — Tasa de fraude y chargeback por semana
+- Custom query: OV3 de `03_analysis.sql`
+- Tipo de chart: **Time series** — `fraud_rate` (rojo), `chargeback_rate` (naranja)
+- Dimensión: `week`
+- La granularidad semanal es intencional: los volúmenes de disputa son demasiado bajos para tasas diarias significativas
+
+### OV4 — Costo por transacción por adquirente
+- Custom query: OV4 de `03_analysis.sql`
+- Tipo de chart: **Stacked bar chart** con combo line
+- Dimensión: `acquirer`
+- Barras apiladas: `interchange_fees_usd`, `scheme_fees_usd`, `acquirer_fees_usd`
+- Línea combo (eje derecho): `cost_per_txn_usd`
+- Ordenar por `cost_per_txn_usd` descendente para destacar el adquirente más caro
+
+### OV5 — Tiempo a liquidación por adquirente
+- Custom query: OV5 de `03_analysis.sql`
+- Tipo de chart: **Bar chart** (horizontal)
+- Dimensión: `acquirer`
+- Métrica: `avg_days_to_settlement`
+- Agregar una **línea de referencia en 2** (estándar industrial T+2 de liquidación)
+- Agregar `min_days` y `max_days` como campos de tooltip para mostrar el rango
+- Ordenar por `avg_days_to_settlement` ascendente para destacar el adquirente más rápido
+
+### Filtros para la Página 0
+- Reutilizar el mismo **date range control** de la Página 1 (aplicarlo a OV2 vía `txn_date` y a OV3 vía `week`)

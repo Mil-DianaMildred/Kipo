@@ -1,6 +1,135 @@
 # Kipo — Fintech
 
-> **"Tu plata, sin rodeos."**  
+> 🇬🇧 **English** (main) · [🇪🇸 Español](#-versión-en-español)
+
+---
+
+# 🇬🇧 English version
+
+> **"Your money, no detours."**
+> A fictional company built as a framework to explore and share how payments infrastructure really works in Colombia: cards, wallets, cash-in/cash-out, QR, BaaS, and regulatory compliance.
+
+---
+
+## What is Kipo?
+
+Kipo is a hypothetical Colombian fintech inspired by companies like Tpaga, Bold, and Nubank. It started as a financial super-app targeting informal Colombia — people without a bank account, without a credit history, and who operate primarily in cash. In late 2025, Kipo opened up its payments infrastructure as a **Banking as a Service (BaaS)** platform, allowing other fintechs, marketplaces, and tech companies to build financial products on the same rails Kipo uses internally.
+
+This repository contains case studies, technical analyses, and product documentation that use Kipo as context to explore and share how the payments ecosystem works in Colombia and LatAm.
+
+---
+
+## Business structure
+
+### B2C · Kipo App
+**Segment:** Informal Colombia — under-banked people without a first account.
+
+| Product | Technical description |
+|---|---|
+| Digital wallet | Low-value deposit account regulated under the Sedpe scheme. Real-time balance, transactions, and push notifications. |
+| Mastercard · Visa debit and credit card | Virtual + physical card issuance (debit against the wallet, credit against an assigned line). Flow: authorization → network (Mastercard or Visa) → Kipo issuer. Supports NFC tokenization (Apple Pay / Google Wallet). |
+| QR payments | Interoperable QR via Transfiya. The merchant generates the QR; Kipo resolves the payment instruction against the user's balance in <3s. |
+| Transfers | Real-time ACH transfers and PSE debits for online payments. No cost to the user. |
+| Bill pay | Integration with utility, telephony, and internet operators via collection agreements (SPE). |
+| Cash-in | Cash deposit through a correspondent network: Efecty, Baloto, Éxito. The cashier generates a code; Kipo credits the balance in <60s after confirming the transaction with the correspondent. |
+| Cash-out | Cash withdrawal at enabled ATMs and correspondents. The system validates available balance, generates a withdrawal PIN, and records the outflow with automatic reconciliation. |
+
+### B2B · Kipo Platform (BaaS)
+**Pivot:** launched in Q4 2025.
+**Segment:** Fintechs, neobanks, marketplaces, and tech companies that need to process payments or issue financial products without connecting directly to the banking network.
+
+| API / Module | Capability |
+|---|---|
+| Virtual accounts | Programmatic account opening, biometric KYC, balance and transaction management. Multi-tenant: each client company has its own namespace. |
+| Card issuing | White-label issuing of Mastercard and Visa debit and credit cards (virtual and physical). Limit controls, block/unblock, and API-configurable controls. |
+| Transfer engine | ACH Colombia and Transfiya. The client company instructs the movement via API; Kipo executes, confirms, and notifies via webhook. |
+| QR gateway | QR generation and resolution for merchants. Supports one-off charges and dynamic QR with embedded amount. |
+| Anti-fraud module | Configurable rules + ML scoring. Signals: device ID, geolocation, transactional velocity, UIAF blacklists. |
+| Reconciliation | Real-time settlement reports. Export to CSV/JSON. Automatic reconciliation between processed transactions and received funds. |
+| SMB accounts | Collection accounts for small businesses. Receive QR, PSE, and transfer payments; check balance and generate payment links. |
+
+---
+
+## Company context (fictional data)
+
+| Field | Value |
+|---|---|
+| Country | Colombia |
+| Founded | 2019 |
+| Stage | Series B · USD $48M raised |
+| B2C active users | ~4.2 million |
+| B2B clients (Platform) | 38 companies |
+| Regulatory license | Sedpe (Specialized Electronic Deposits and Payments Company) |
+| Regulators | Colombian Financial Superintendency (SFC) · UIAF |
+| Payment networks | Mastercard · Visa · ACH Colombia · Transfiya |
+| Correspondents | Efecty · Baloto · Éxito locations |
+
+### Why Sedpe and not a bank
+The Sedpe license (the same scheme used by Nequi and Daviplata) allows for taking low-value deposits, operating wallets, and connecting to Transfiya/ACH without requiring full bank reserves. This defines the balance caps, daily transaction limits, and SARLAFT requirements that appear in the case studies.
+
+### Card networks: Mastercard and Visa
+Kipo operates with both networks in debit and credit mode to maximize coverage and flexibility in the issuance program. Mastercard offers better access conditions for growth-stage fintechs in Colombia; Visa expands international acceptance and access to certain merchant segments. Debit and credit have similar authorization flows but differ in settlement, interchange fees, and risk management — differences relevant to the case studies.
+
+---
+
+## Relevant tech stack
+
+```
+Card issuing            Mastercard Debit & Credit Issuing · Visa Debit & Credit Program
+Transfers               ACH Colombia · Transfiya
+Online payments         PSE (bank debit)
+Authentication          3DS2 (3-D Secure 2.x)
+Tokenization            NFC (Apple Pay / Google Wallet)
+Anti-fraud              Rules engine + ML scoring · UIAF lists
+Onboarding              Biometric KYC (ID + selfie + liveness)
+Reconciliation          Automatic, real-time with JSON/CSV export
+BaaS architecture       Multi-tenant virtual accounts · event webhooks
+Compliance              SARLAFT · LAFT · UIAF reporting
+```
+
+---
+
+## Case studies in this repository
+
+> The cases explore how Colombia's payments infrastructure works technically — real flows, architectural decisions, and the business logic behind each payment method.
+
+| # | Case | Key concepts | Status | Link |
+|---|---|---|---|---|
+| 01 | Full debit and credit card payment flow (Mastercard · Visa) | Authorization, capture, settlement, interchange, chargebacks | Published | [v1](case-studies/01-card-payment-lifecycle/README.md) · [v2](case-studies/01-card-payment-lifecycle/README_v2.md) |
+| 02 | Cash-in via correspondent and wallet credit | Correspondent protocol, reconciliation, cash fraud prevention | In progress |   |
+| 03 | Interoperable QR payments with Transfiya | QR generation, payment instruction, response time, fallback | Backlog |   |
+| 04 | Real-time ACH transfers | Clearing windows, error handling, returns | Backlog |   |
+| 05 | White-label card issuing (BaaS) | Issuing API, card controls, tokenization, lifecycle management | Backlog |   |
+| 06 | Anti-fraud engine and transaction scoring | Risk signals, configurable rules, false-positive rates, 3DS2 | Backlog |   |
+| 07 | Automatic reconciliation and settlement | Match between authorized, captured, and received funds | Backlog |   |
+| 08 | KYC onboarding and SARLAFT compliance | Biometric flow, restrictive lists, UIAF transactional monitoring | Backlog |   |
+
+### ZAPIER AS A REFERENCE FOR HOW THEY TURNED AN API INTO A VIBECODER PRODUCT
+
+---
+
+## Inspiration and real-world references
+
+Kipo is a fictional company built taking real references from:
+
+- **Tpaga** — B2C → BaaS model, Sedpe license, correspondents in Colombia
+- **Bold** — payments infrastructure for merchants, acquiring
+- **Yuno** — payments orchestration, multiple acquirers, smart routing
+
+> Kipo puts into practice all the Payments knowledge from Zaira Zatarain compiled in her [Payments PM Roadmap](https://zzatarain.gumroad.com/l/roadmap-pagos?layout=profile)
+---
+
+## About this repository
+
+Kipo is a fictional company built to have a concrete context from which to explore and share how payments work in Colombia and LatAm. All content (company, metrics, clients) is fictional and intended for educational purposes.
+
+The case studies ground real ecosystem concepts: SFC/UIAF regulation, ACH and Transfiya networks, Mastercard and Visa issuing, authorization and settlement flows, and BaaS architectures — using Kipo as the connecting thread.
+
+---
+
+# 🇪🇸 Versión en español
+
+> **"Tu plata, sin rodeos."**
 > Empresa ficticia creada como marco de trabajo para explorar y compartir cómo funciona realmente la infraestructura de pagos en Colombia: tarjetas, wallets, cash-in/cash-out, QR, BaaS y cumplimiento regulatorio.
 
 ---
@@ -29,7 +158,7 @@ Este repositorio contiene casos de estudio, análisis técnicos y documentación
 | Cash-out | Retiro de efectivo en cajeros habilitados y corresponsales. El sistema valida saldo disponible, genera PIN de retiro y registra el egreso con conciliación automática. |
 
 ### B2B · Kipo Platform (BaaS)
-**Pivot:** lanzado en Q4 2025.  
+**Pivot:** lanzado en Q4 2025.
 **Segmento:** Fintechs, neobancos, marketplaces y empresas de tecnología que necesitan procesar pagos o emitir productos financieros sin conectarse directamente a la red bancaria.
 
 | API / Módulo | Capacidad |
@@ -98,7 +227,7 @@ Cumplimiento            SARLAFT · LAFT · reporte a UIAF
 | 07 | Conciliación automática y liquidación | Cuadre entre transacciones autorizadas, capturadas y fondos recibidos | Backlog |   |
 | 08 | Onboarding KYC y cumplimiento SARLAFT | Flujo biométrico, listas restrictivas, monitoreo transaccional UIAF | Backlog |   |
 
-### ZAPIER COMO REFERENCIA DE COMO VOLVIERON UNA API PARA VIBECODER 
+### ZAPIER COMO REFERENCIA DE COMO VOLVIERON UNA API PARA VIBECODER
 
 ---
 
