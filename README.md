@@ -218,7 +218,7 @@ Cumplimiento            SARLAFT · LAFT · reporte a UIAF
 
 | # | Caso | Conceptos clave | Status | Link |
 |---|---|---|---|---|
-| 01 | Flujo completo de pago con tarjeta débito y crédito (Mastercard · Visa) | Autorización, captura, liquidación, interchange, contracargos | Publicado | [v1](case-studies/01-card-payment-lifecycle/README.md) · [v2](case-studies/01-card-payment-lifecycle/README_v2.md) |
+| 01 | Flujo completo de pago con tarjeta débito y crédito (Mastercard · Visa) | Autorización, captura, liquidación, interchange, contracargos | Publicado | [Case Study](https://dianamildred.lovable.app/projects/kipo) - [Dashboard](https://datastudio.google.com/reporting/3548d15e-10e5-4016-87c2-bb2645912af9) - [Repo](https://github.com/Mil-DianaMildred/Kipo/tree/main/case-studies/01-card-payment-lifecycle) |
 | 02 | Cash-in vía corresponsal y acreditación en wallet | Protocolo corresponsal, conciliación, prevención de fraude en efectivo | En proceso |   |
 | 03 | Pagos QR interoperables con Transfiya | Generación de QR, instrucción de pago, tiempo de respuesta, fallback | Backlog |   |
 | 04 | Transferencias ACH en tiempo real | Ventanas de compensación, manejo de errores, devoluciones | Backlog |   |
