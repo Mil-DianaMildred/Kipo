@@ -95,7 +95,7 @@ Compliance              SARLAFT · LAFT · UIAF reporting
 
 | # | Case | Key concepts | Status | Link |
 |---|---|---|---|---|
-| 01 | Full debit and credit card payment flow (Mastercard · Visa) | Authorization, capture, settlement, interchange, chargebacks | Published | [Case Study]([case-studies/01-card-payment-lifecycle/README.md](https://dianamildred.lovable.app/projects/kipo)) · [Dashboard]((https://datastudio.google.com/reporting/3548d15e-10e5-4016-87c2-bb2645912af9]) · [Repo](https://github.com/Mil-DianaMildred/Kipo/tree/main/case-studies#:~:text=..-,01%2Dcard%2Dpayment%2Dlifecycle,-Remove%20flag%20emojis) | 
+| 01 | Full debit and credit card payment flow (Mastercard · Visa) | Authorization, capture, settlement, interchange, chargebacks | Published | [Case Study](case-studies/01-card-payment-lifecycle/README.md](https://dianamildred.lovable.app/projects/kipo), [Dashboard](https://datastudio.google.com/reporting/3548d15e-10e5-4016-87c2-bb2645912af9), [Repo]([https://github.com/Mil-DianaMildred/Kipo/tree/main/case-studies#:~:text=..-,01%2Dcard%2Dpayment%2Dlifecycle,-Remove%20flag%20emojis](https://github.com/Mil-DianaMildred/Kipo/tree/main/case-studies/01-card-payment-lifecycle)) | 
 | 02 | Cash-in via correspondent and wallet credit | Correspondent protocol, reconciliation, cash fraud prevention | In progress |   |
 | 03 | Interoperable QR payments with Transfiya | QR generation, payment instruction, response time, fallback | Backlog |   |
 | 04 | Real-time ACH transfers | Clearing windows, error handling, returns | Backlog |   |
